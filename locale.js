@@ -28,9 +28,8 @@ const strings = {
   'Редактировать запись': 'Edit entry', 'Новая запись': 'New entry',
   'Архив уже изменился. Скопируй черновик и открой запись заново.': 'The archive changed. Copy your draft and reopen the entry.',
   'Сохранение не прошло. Изменения пока остались в форме.': 'Could not save. Your draft is still in the form.',
-  'Сначала открой личную ссылку ГМа на этом устройстве.': 'Open your personal GM link on this device first.',
   'Редактор открыт. Сохранённые правки увидят все.': 'GM mode is open. Saved edits are visible to everyone.',
-  'Код или ключ ГМа не подошёл.': 'The GM code or key did not match.',
+  'Пароль ГМа не подошёл.': 'The GM password did not match.',
   'Запрос к общему архиву не прошёл.': 'Could not connect to the shared archive.',
   'Режим ГМа закрыт.': 'GM mode locked.', 'добавлено ГМом': 'Added by the GM',
   'Запись сохранена для всех.': 'Entry saved for everyone.',
@@ -70,3 +69,4 @@ export function cleanText(value) {
     .replace(/^\s*[_*]+\s*$/, '')
     .trim();
 }
+

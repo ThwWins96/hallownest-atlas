@@ -1,5 +1,5 @@
 import {readArchive, writeArchive} from './archive-api.js';
-import {language, setLanguage, t, cleanText} from './locale.js';
+import {language, setLanguage, t, cleanText} from './locale.js?v=4';
 
 const KIND_LABEL = {разумные:'Разумный жук',дикие:'Дикое существо',equipment:'Экипировка',state:'Состояние',rule:'Памятка'};
 const STAT_LABEL = {size:'Размер',might:'Мощь',accuracy:'Прон',shell:'Панц',grace:'Грац',hearts:'Сердца',souls:'Души',stamina:'Выносливость',speed:'Скорость',dread:'Жуть',charm:'Привлекательность',hunger:'Голод',traits:'Черты',geo:'Гео',quality:'Качество',heavy:'Вес',max:'Максимум',обычный:'Обычный',необычный:'Необычный',редкий:'Редкий',уникальный:'Уникальный'};
@@ -24,12 +24,7 @@ let english = {};
 let originals = new Map();
 let archiveStatus = 'подключаем архив';
 let editLanguage = 'en';
-const keyStorage = 'hallownest-editor-key';
-const linkedKey = new URLSearchParams(location.hash.slice(1)).get('gm-key');
-if (linkedKey && /^[a-f0-9]{64}$/.test(linkedKey)) {
-  localStorage.setItem(keyStorage, linkedKey);
-  history.replaceState(null, '', location.pathname + location.search);
-}
+localStorage.removeItem('hallownest-editor-key');
 
 const benches = [
   ['bestiary', 'разумные', 'Разумные жуки', 'Записки Дуэлянта'],
@@ -45,7 +40,9 @@ function mountHall() {
     <button class="bench-choice" data-bench="${i}" type="button" aria-pressed="${String(String(i) === pressed)}">
       <span class="bench-stage">
         <svg class="bench-drawing" aria-hidden="true"><use href="./symbols.svg#bench"/></svg>
-        <svg class="bench-bug" aria-hidden="true"><use href="./symbols.svg#bug"/></svg>
+        <span class="bench-shadow" aria-hidden="true"></span>
+        <svg class="bench-bug" aria-hidden="true"><use href="./symbols.svg?v=4#bug"/></svg>
+        <span class="bench-sparks" aria-hidden="true"><i></i><i></i><i></i></span>
       </span>
       <strong>${t(title)}</strong><small>${t(subtitle)}</small>
     </button>`).join('');
@@ -56,7 +53,7 @@ function mountHall() {
         other.setAttribute('aria-pressed', String(other === button)));
       const [view, kind] = benches[Number(button.dataset.bench)];
       const reducedMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
-      benchTimer = setTimeout(() => showView(view, kind), reducedMotion ? 0 : 560);
+      benchTimer = setTimeout(() => showView(view, kind), reducedMotion ? 0 : 880);
     };
   });
   if ($('.bloom-drift').childElementCount) return;
@@ -119,10 +116,9 @@ function applyLanguage() {
     ['.atlas-footer small', 'Фанатский справочник по Hollow Knight RPG', 'A fan guide to Hollow Knight RPG'],
     ['#login-dialog .eyebrow', 'ТОЛЬКО ДЛЯ ХРАНИТЕЛЯ', 'ARCHIVE KEEPERS ONLY'],
     ['#login-dialog h2', 'Ключ от архива', 'Key to the archive'],
-    ['#login-dialog p', 'Введи код ГМа, чтобы изменить записи атласа.', 'Enter your GM code to edit the atlas.'],
-    ['#login-dialog label', 'КОД ГМа', 'GM CODE'],
+    ['#login-dialog p', 'Введи пароль ГМа, чтобы изменить записи атласа.', 'Enter your GM password to edit the atlas.'],
+    ['#login-dialog label', 'ПАРОЛЬ ГМа', 'GM PASSWORD'],
     ['#login-dialog .primary-button', 'Открыть архив ', 'Unlock archive '],
-    ['#login-dialog .fine-print', 'Открой личную ссылку ГМа один раз на каждом устройстве. Правки сохраняются в общем архиве.', 'Open your personal GM link once per device. Edits are saved in the shared archive.'],
     ['#edit-dialog .eyebrow span:last-child', 'РАБОЧАЯ ТЕТРАДЬ ГМа', 'GM WORKBOOK'],
     ['label:has(#edit-name)', 'НАЗВАНИЕ', 'NAME'],
     ['label:has(#edit-kind)', 'РАЗДЕЛ', 'SECTION'],
@@ -326,15 +322,12 @@ function wire(){
     event.preventDefault();
     const button = event.submitter;
     if (button) button.disabled = true;
-    const key = localStorage.getItem(keyStorage);
     const password = $('#gm-password').value;
     const error = $('#login-error');
     error.classList.add('hidden');
     try {
-      if (!key) throw new Error('Сначала открой личную ссылку ГМа на этом устройстве.');
-      const credential = password + ':' + key;
-      await writeArchive(credential);
-      editorCredential = credential;
+      await writeArchive(password);
+      editorCredential = password;
       gmUnlocked = true;
       $('#login-dialog').close();
       $('#gm-password').value = '';
@@ -348,7 +341,7 @@ function wire(){
       toast('Редактор открыт. Сохранённые правки увидят все.');
     } catch (failure) {
       error.textContent = failure.status === 401 || failure.status === 403
-        ? t('Код или ключ ГМа не подошёл.')
+        ? t('Пароль ГМа не подошёл.')
         : t(failure.message);
       error.classList.remove('hidden');
     } finally {
@@ -478,3 +471,4 @@ function toast(message) {
   toastTimer = setTimeout(() => notice.classList.remove('show'), 2600);
 }
 boot();
+

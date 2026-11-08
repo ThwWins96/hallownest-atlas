@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./bloom.css?v=3">
+  <link rel="stylesheet" href="./bloom.css?v=4">
 </head>
 <body>
   <div class="fog fog-one"></div><div class="fog fog-two"></div>
@@ -77,7 +77,7 @@
     </footer>
   </div>
 
-  <dialog id="login-dialog" class="dialog compact"><form method="dialog" id="login-form"><button type="button" class="dialog-close" aria-label="Закрыть">×</button><div class="dialog-crest">⌘</div><div class="eyebrow small centered">ТОЛЬКО ДЛЯ ХРАНИТЕЛЯ</div><h2>Ключ от архива</h2><p>Введи код ГМа, чтобы изменить записи атласа.</p><label class="field-label" for="gm-password">КОД ГМа</label><input id="gm-password" class="form-input" type="password" inputmode="numeric" autocomplete="current-password" placeholder="••••" required><div id="login-error" class="form-error hidden" role="alert"></div><button class="primary-button" type="submit">Открыть архив <span>→</span></button><div class="fine-print">Открой личную ссылку ГМа один раз на каждом устройстве. Правки сохраняются в общем архиве.</div></form></dialog>
+  <dialog id="login-dialog" class="dialog compact"><form method="dialog" id="login-form"><button type="button" class="dialog-close" aria-label="Закрыть">×</button><div class="dialog-crest">⌘</div><div class="eyebrow small centered">ТОЛЬКО ДЛЯ ХРАНИТЕЛЯ</div><h2>Ключ от архива</h2><p>Введи пароль ГМа, чтобы изменить записи атласа.</p><label class="field-label" for="gm-password">ПАРОЛЬ ГМа</label><input id="gm-password" class="form-input" type="password" maxlength="160" autocomplete="current-password" placeholder="••••" required><div id="login-error" class="form-error hidden" role="alert"></div><button class="primary-button" type="submit">Открыть архив <span>→</span></button></form></dialog>
 
   <dialog id="edit-dialog" class="dialog editor-dialog"><form id="edit-form"><button type="button" class="dialog-close" data-close aria-label="Закрыть">×</button><div class="eyebrow small"><span class="eyebrow-line"></span><span>РАБОЧАЯ ТЕТРАДЬ ГМа</span></div><h2 id="edit-title">Новая запись</h2><input type="hidden" id="edit-id"><div class="form-grid">
     <label class="field-label">НАЗВАНИЕ<input class="form-input" id="edit-name" required></label>
@@ -90,7 +90,8 @@
     <label class="field-label wide">ИСТОЧНИК / ПРИМЕЧАНИЕ<input class="form-input" id="edit-source"></label>
   </div><div class="dialog-actions"><button type="button" class="delete-button hidden" id="delete-button">Удалить запись</button><button type="button" class="secondary-button" data-close>Отмена</button><button type="submit" class="primary-button">Сохранить запись <span>→</span></button></div></form></dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="./app.js?v=3" type="module"></script>
+  <script src="./app.js?v=4" type="module"></script>
 </body>
 </html>
+
 
