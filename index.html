@@ -1,11 +1,11 @@
 <!doctype html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#0b1122">
   <meta name="description" content="Полевой атлас жуков, существ, экипировки и состояний для The Unofficial Hollow Knight RPG.">
-  <title>Атлас Халлоунеста — путевой справочник</title>
+  <title>Hallownest Atlas</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -18,17 +18,12 @@
     <header class="topbar">
       <a class="brand" href="#" aria-label="Атлас Халлоунеста, на главную">
         <svg class="brand-emblem" aria-hidden="true"><use href="./symbols.svg#mask"/></svg>
-        <span class="brand-copy"><b>АТЛАС ХАЛЛОУНЕСТА</b><small>полевые записи странника</small></span>
+        <span class="brand-copy"><b>HALLOWNEST ATLAS</b><small>a traveller’s field notes</small></span>
       </a>
-      <nav class="topnav" aria-label="Разделы атласа">
-        <button class="nav-link active" data-view="bestiary">Бестиарий</button>
-        <button class="nav-link" data-view="equipment">Экипировка</button>
-        <button class="nav-link" data-view="states">Состояния</button>
-        <button class="nav-link" data-view="rules">Памятка</button>
-      </nav>
       <div class="top-actions">
-        <span id="save-status" class="save-status" role="status">подключаем архив</span>
-        <button class="gm-button" id="gm-toggle"><span class="key-icon">⌘</span><span id="gm-label">Режим ГМа</span></button>
+        <select id="language-switch" class="language-switch" aria-label="Language"><option value="en">English</option><option value="ru">Русский</option></select>
+        <span id="save-status" class="save-status" role="status">connecting to archive</span>
+        <button class="gm-button" id="gm-toggle"><span class="key-icon">⌘</span><span id="gm-label">GM mode</span></button>
       </div>
     </header>
 
@@ -36,25 +31,12 @@
       <section class="bench-hall" id="bench-hall" aria-labelledby="hall-title">
         <div class="bloom-drift" aria-hidden="true"></div>
         <div class="hall-heading">
-          <span class="hall-kicker">НЕОФИЦИАЛЬНЫЙ СПРАВОЧНИК · HKRPG</span>
-          <h1 id="hall-title">Атлас Халлоунеста</h1>
+          <span class="hall-kicker">UNOFFICIAL FIELD GUIDE · HKRPG</span>
+          <h1 id="hall-title">Hallownest Atlas</h1>
           <svg class="flourish" aria-hidden="true"><use href="./symbols.svg#flourish"/></svg>
-          <p>Выбери лавочку, чтобы открыть нужный раздел.</p>
+          <p>Choose a bench to open a section.</p>
         </div>
         <nav class="benches" id="benches" aria-label="Лавочки с разделами"></nav>
-      </section>
-      <section class="hero hidden" id="section-hero">
-        <div class="hero-copy">
-          <div class="eyebrow"><span class="eyebrow-line"></span><span id="hero-eyebrow">ПОЛЕВОЙ СПРАВОЧНИК · ЗАПИСЬ 01</span></div>
-          <h2 id="hero-title">Там, где <em>замирает</em><br>свет фонаря</h2>
-          <p id="hero-description">Атлас обитателей увядающего королевства. Имена, повадки и заметки для тех, кто не боится идти глубже.</p>
-          <div class="hero-meta"><span class="meta-dot"></span><span id="record-count">Поднимаем старые записи…</span><span class="meta-separator">/</span><span>редакция v1.7</span></div>
-        </div>
-        <div class="hero-art" aria-hidden="true">
-          <div class="orbital orbital-a"></div><div class="orbital orbital-b"></div>
-          <div class="moon"></div><div class="beetle-silhouette"><i></i><i></i><i></i><i></i><b></b></div>
-          <div class="hero-caption"><span>КАРТА НЕПОЛНА</span><span>НО ПУТЬ ЕСТЬ</span></div>
-        </div>
       </section>
 
       <div class="workspace hidden" id="workspace">
@@ -77,7 +59,7 @@
           <div class="filter-row" id="filters"></div>
           <div class="gm-tools hidden" id="gm-tools">
             <div><b>Редактор ГМа</b><span>Сохранённые изменения видны всем игрокам</span></div>
-            <div class="gm-tool-actions"><label class="import-button">Импорт базы<input type="file" id="import-file" accept="application/json,.json" hidden></label><button class="text-button" id="reset-button">Сбросить к исходным</button><button class="add-button" id="add-button">＋ Новая запись</button></div>
+            <div class="gm-tool-actions"><label class="import-button"><span id="import-label">Импорт базы</span><input type="file" id="import-file" accept="application/json,.json" hidden></label><button class="text-button" id="reset-button">Сбросить к исходным</button><button class="add-button" id="add-button">＋ Новая запись</button></div>
           </div>
           <div class="catalog-grid">
             <div class="record-list" id="record-list" aria-live="polite"></div>
@@ -90,8 +72,8 @@
     <footer class="atlas-footer">
       <div class="flower-bed" aria-hidden="true"></div>
       <svg class="flourish" aria-hidden="true"><use href="./symbols.svg#flourish"/></svg>
-      <p>Сделано с любовью от Винса и Айви</p>
-      <small>Фанатский справочник по Hollow Knight RPG</small>
+      <p>Made with love by Vince and Ivy</p>
+      <small>A fan guide to Hollow Knight RPG</small>
     </footer>
   </div>
 

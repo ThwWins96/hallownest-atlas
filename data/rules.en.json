@@ -1,0 +1,116 @@
+{
+  "gear-high": {
+    "name": "Starting equipment · High power",
+    "region": "Building Your Bug",
+    "group": "Starting Gear",
+    "description": "For veteran bugs with several Path Ranks.",
+    "text": "Choose a weapon or magical implement, then a shield or armor set. Take one Rare Charm, one Uncommon plus one Common Charm, or three Common Charms. Set aside 1,000 Geo for other equipment.",
+    "source": "Starting Items and Money, p. 1"
+  },
+  "gear-medium": {
+    "name": "Starting equipment · Medium power",
+    "region": "Building Your Bug",
+    "group": "Starting Gear",
+    "description": "For experienced bugs with one or two Path Ranks.",
+    "text": "Choose a weapon or magical implement, then a shield or armor set. Take one Uncommon Charm or two Common Charms. Set aside 200 Geo for other equipment.",
+    "source": "Starting Items and Money, p. 1"
+  },
+  "gear-low": {
+    "name": "Starting equipment · Low power",
+    "region": "Building Your Bug",
+    "group": "Starting Gear",
+    "description": "For newcomers and bugs with little combat experience.",
+    "text": "Choose a worn weapon or a trinket, then a worn shield or broken armor set. Take one Common Charm and 100 Geo for other equipment.",
+    "source": "Starting Items and Money, p. 1"
+  },
+  "amulet-prices": {
+    "name": "Additional starting Charms",
+    "region": "Building Your Bug",
+    "group": "Charms",
+    "description": "An optional rule for buying Charms at character creation.",
+    "text": "If the GM allows it, Common Charms cost 100 Geo, Uncommon 200, Rare 300 and Unique 400. The GM can set different prices for fragile or cursed versions.",
+    "source": "Starting Items and Money, p. 2"
+  },
+  "weapon-basics": {
+    "name": "Weapons · Quick reference",
+    "region": "Equipment",
+    "group": "Weapons",
+    "description": "Weapon Quality, Bulk and range shape an attack.",
+    "text": "Weapon Quality adds dice to an attack. A weapon with 2 or more Bulk gives the attacker one stack of Off-Balance. Melee targets an adjacent square. Reach adds one square beyond adjacency. Range (X) gives the maximum distance for a ranged attack.",
+    "stats": {"quality": "Adds dice to attacks", "heavy": "Heavy at Bulk 2+"},
+    "source": "The Unofficial Hollow Knight RPG v1.0.15, p. 87"
+  },
+  "status-imbalance": {
+    "name": "Off-Balance",
+    "region": "Damage and Conditions",
+    "group": "Stacks and Effects",
+    "description": "Each stack reduces Stamina regeneration at the start of the turn.",
+    "text": "For each stack, regain one less Stamina when your turn starts. Remove one stack after this reduction. Off-Balance caps at three stacks. On your turn you can spend Stamina to remove an equal number of stacks.",
+    "source": "The Unofficial Hollow Knight RPG v1.0.15, pp. 119–120"
+  },
+  "status-gates": {
+    "name": "Death’s Door",
+    "region": "Damage and Conditions",
+    "group": "Hearts and Survival",
+    "description": "A bug reaches Death’s Door at zero Hearts.",
+    "text": "The first time a bug reaches Death’s Door per rest, they recover all Stamina. Further damage comes out of Stamina, which stops regenerating. At zero Stamina the bug dies. If combat ends first, the bug falls unconscious.",
+    "source": "The Unofficial Hollow Knight RPG v1.0.15, p. 120"
+  },
+  "status-unconscious": {
+    "name": "Unconsciousness",
+    "region": "Damage and Conditions",
+    "group": "Hearts and Survival",
+    "description": "An unconscious bug cannot move or take actions under their own power.",
+    "text": "At zero Hearts a bug may choose to fall unconscious. This restores full Stamina even if they have already been at Death’s Door since their last rest. While unconscious, incoming damage reduces Stamina and it does not regenerate. At zero Stamina the bug dies.",
+    "source": "The Unofficial Hollow Knight RPG v1.0.15, p. 120"
+  },
+  "status-choke": {
+    "name": "Suffocation",
+    "region": "Damage and Conditions",
+    "group": "Hearts and Survival",
+    "description": "A lack of breathable air wears down a bug’s maximum Stamina.",
+    "text": "Each turn of suffocation lowers maximum Stamina by one. Once that maximum reaches zero, suffocation damages Hearts. A full turn in breathable air ends the effect.",
+    "source": "The Unofficial Hollow Knight RPG v1.0.15, p. 120"
+  },
+  "status-dot": {
+    "name": "Damage over Time",
+    "region": "Damage and Conditions",
+    "group": "Stacks and Effects",
+    "description": "Ongoing environmental damage that decays at the start of the turn.",
+    "text": "At the start of your turn, take environmental damage equal to your DoT, then reduce it by one. Spend one Stamina to clear one point of DoT. Unless an effect says otherwise, use the higher value when two effects of the same type apply. Damage Reduction must explicitly cover DoT to reduce it.",
+    "source": "The Unofficial Hollow Knight RPG v1.0.15, p. 120"
+  },
+  "status-effect": {
+    "name": "Status Effect",
+    "region": "Damage and Conditions",
+    "group": "Stacks and Effects",
+    "description": "A buff or debuff tracked in points.",
+    "text": "The target loses one point at the end of each turn and can spend Stamina to clear more. Reapplying the same effect adds points. Its strength stays the same unless the effect says otherwise. The usual limit is ten points.",
+    "stats": {"max": "10 points"},
+    "source": "The Unofficial Hollow Knight RPG v1.0.15, p. 120"
+  },
+  "rules-rolls": {
+    "name": "Attribute checks and successes",
+    "region": "Rules",
+    "group": "Dice",
+    "description": "Roll a pool of six-sided dice and count successes.",
+    "text": "A 5 or 6 on a die counts as one success. Use the check’s rules to find the size of the pool and the number of successes needed. A half die grants a reroll. When rerolling a die, keep the better result.",
+    "source": "The Unofficial Hollow Knight RPG v1.0.15, pp. 5–6"
+  },
+  "rules-damage": {
+    "name": "Damage and defense",
+    "region": "Rules",
+    "group": "Combat",
+    "description": "Quick reference for hits, damage risk and defense.",
+    "text": "After defense, an attack needs at least one success to hit. Further successes add rollover damage, capped at the higher of the weapon’s base damage and the Stamina dedicated to the attack. Apply Damage Reduction before Soak. Each defensive success removes one attack success. Parry with Might and dodge with Grace.",
+    "source": "The Unofficial Hollow Knight RPG v1.0.15, pp. 118–120"
+  },
+  "project-note": {
+    "name": "About this atlas",
+    "region": "Rules",
+    "group": "Sources and Version",
+    "description": "An unofficial fan reference for your table.",
+    "text": "The English rules follow The Unofficial Hollow Knight RPG v1.0.15. Creature names and abilities come from The Duelist’s Duelogue and The Skald’s Journal, the companion documents linked in the rulebook. Starting equipment comes from the campaign’s Starting Items and Money handout. Ask your GM about table rulings.",
+    "source": "The Unofficial Hollow Knight RPG and its companion documents"
+  }
+}
