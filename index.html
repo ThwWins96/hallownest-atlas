@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#0b1122">
+  <meta name="description" content="Полевой атлас жуков, существ, экипировки и состояний для The Unofficial Hollow Knight RPG.">
+  <title>Атлас Халлоунеста — путевой справочник</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="./style.css">
+  <link rel="stylesheet" href="./bloom.css">
+</head>
+<body>
+  <div class="fog fog-one"></div><div class="fog fog-two"></div>
+  <div class="site-shell">
+    <header class="topbar">
+      <a class="brand" href="#" aria-label="Атлас Халлоунеста, на главную">
+        <svg class="brand-emblem" aria-hidden="true"><use href="./symbols.svg#mask"/></svg>
+        <span class="brand-copy"><b>АТЛАС ХАЛЛОУНЕСТА</b><small>полевые записи странника</small></span>
+      </a>
+      <nav class="topnav" aria-label="Разделы атласа">
+        <button class="nav-link active" data-view="bestiary">Бестиарий</button>
+        <button class="nav-link" data-view="equipment">Экипировка</button>
+        <button class="nav-link" data-view="states">Состояния</button>
+        <button class="nav-link" data-view="rules">Памятка</button>
+      </nav>
+      <div class="top-actions">
+        <span id="save-status" class="save-status" role="status">подключаем архив</span>
+        <button class="gm-button" id="gm-toggle"><span class="key-icon">⌘</span><span id="gm-label">Режим ГМа</span></button>
+      </div>
+    </header>
+
+    <main>
+      <section class="bench-hall" id="bench-hall" aria-labelledby="hall-title">
+        <div class="bloom-drift" aria-hidden="true"></div>
+        <div class="hall-heading">
+          <span class="hall-kicker">НЕОФИЦИАЛЬНЫЙ СПРАВОЧНИК · HKRPG</span>
+          <h1 id="hall-title">Атлас Халлоунеста</h1>
+          <svg class="flourish" aria-hidden="true"><use href="./symbols.svg#flourish"/></svg>
+          <p>Выбери лавочку, чтобы открыть нужный раздел.</p>
+        </div>
+        <nav class="benches" id="benches" aria-label="Лавочки с разделами"></nav>
+      </section>
+      <section class="hero hidden" id="section-hero">
+        <div class="hero-copy">
+          <div class="eyebrow"><span class="eyebrow-line"></span><span id="hero-eyebrow">ПОЛЕВОЙ СПРАВОЧНИК · ЗАПИСЬ 01</span></div>
+          <h2 id="hero-title">Там, где <em>замирает</em><br>свет фонаря</h2>
+          <p id="hero-description">Атлас обитателей увядающего королевства. Имена, повадки и заметки для тех, кто не боится идти глубже.</p>
+          <div class="hero-meta"><span class="meta-dot"></span><span id="record-count">Поднимаем старые записи…</span><span class="meta-separator">/</span><span>редакция v1.7</span></div>
+        </div>
+        <div class="hero-art" aria-hidden="true">
+          <div class="orbital orbital-a"></div><div class="orbital orbital-b"></div>
+          <div class="moon"></div><div class="beetle-silhouette"><i></i><i></i><i></i><i></i><b></b></div>
+          <div class="hero-caption"><span>КАРТА НЕПОЛНА</span><span>НО ПУТЬ ЕСТЬ</span></div>
+        </div>
+      </section>
+
+      <div class="workspace hidden" id="workspace">
+        <aside class="sidebar">
+          <div class="side-section-label">УКАЗАТЕЛЬ</div>
+          <div class="side-nav" id="side-nav"></div>
+          <div class="sidebar-rule"></div>
+          <div class="side-note"><span class="note-ornament">✳</span><p>«В темноте всякий путь начинается с имени»</p><small>— запись на полях</small></div>
+          <div class="source-note">ИСТОЧНИКИ<br><span>Правила HKRPG v1.7<br>Журнал Скальда<br>Записки Дуэлянта</span></div>
+        </aside>
+
+        <section class="catalog">
+          <div class="catalog-head">
+            <div><div class="eyebrow small"><span class="eyebrow-line"></span><span id="section-kicker">АРХИВ ОБИТАТЕЛЕЙ</span></div><h2 id="section-title" tabindex="-1">Бестиарий</h2><svg class="flourish section-flourish" aria-hidden="true"><use href="./symbols.svg#flourish"/></svg></div>
+            <div class="catalog-tools">
+              <label class="search-box"><span aria-hidden="true">⌕</span><input id="search" type="search" placeholder="Найти запись…" autocomplete="off"><kbd>/</kbd></label>
+              <button class="icon-button" id="export-button" title="Скачать резервную копию" aria-label="Скачать резервную копию">↓</button>
+            </div>
+          </div>
+          <div class="filter-row" id="filters"></div>
+          <div class="gm-tools hidden" id="gm-tools">
+            <div><b>Редактор ГМа</b><span>Сохранённые изменения видны всем игрокам</span></div>
+            <div class="gm-tool-actions"><label class="import-button">Импорт базы<input type="file" id="import-file" accept="application/json,.json" hidden></label><button class="text-button" id="reset-button">Сбросить к исходным</button><button class="add-button" id="add-button">＋ Новая запись</button></div>
+          </div>
+          <div class="catalog-grid">
+            <div class="record-list" id="record-list" aria-live="polite"></div>
+            <aside class="detail-panel" id="detail-panel"><div class="detail-empty"><div class="empty-symbol">✳</div><h3>Открой запись</h3><p>Выбери жука или заметку в списке, чтобы рассмотреть её поближе.</p><span>КЛИКНИ ПО ЛЮБОЙ КАРТОЧКЕ</span></div></aside>
+          </div>
+          <footer class="catalog-footer"><span>НЕОФИЦИАЛЬНЫЙ ФАНАТСКИЙ СПРАВОЧНИК</span><span>БЕРЕГИ СВЕЧУ · НЕ ЗАБЫВАЙ ДОРОГУ ДОМОЙ</span></footer>
+        </section>
+      </div>
+    </main>
+    <footer class="atlas-footer">
+      <div class="flower-bed" aria-hidden="true"></div>
+      <svg class="flourish" aria-hidden="true"><use href="./symbols.svg#flourish"/></svg>
+      <p>Сделано с любовью от Винса и Айви</p>
+      <small>Фанатский справочник по Hollow Knight RPG</small>
+    </footer>
+  </div>
+
+  <dialog id="login-dialog" class="dialog compact"><form method="dialog" id="login-form"><button type="button" class="dialog-close" aria-label="Закрыть">×</button><div class="dialog-crest">⌘</div><div class="eyebrow small centered">ТОЛЬКО ДЛЯ ХРАНИТЕЛЯ</div><h2>Ключ от архива</h2><p>Введи код ГМа, чтобы изменить записи атласа.</p><label class="field-label" for="gm-password">КОД ГМа</label><input id="gm-password" class="form-input" type="password" inputmode="numeric" autocomplete="current-password" placeholder="••••" required><div id="login-error" class="form-error hidden" role="alert"></div><button class="primary-button" type="submit">Открыть архив <span>→</span></button><div class="fine-print">Открой личную ссылку ГМа один раз на каждом устройстве. Правки сохраняются в общем архиве.</div></form></dialog>
+
+  <dialog id="edit-dialog" class="dialog editor-dialog"><form id="edit-form"><button type="button" class="dialog-close" data-close aria-label="Закрыть">×</button><div class="eyebrow small"><span class="eyebrow-line"></span><span>РАБОЧАЯ ТЕТРАДЬ ГМа</span></div><h2 id="edit-title">Новая запись</h2><input type="hidden" id="edit-id"><div class="form-grid">
+    <label class="field-label">НАЗВАНИЕ<input class="form-input" id="edit-name" required></label>
+    <label class="field-label">РАЗДЕЛ<select class="form-input" id="edit-kind"><option value="разумные">Разумные жуки</option><option value="дикие">Дикие существа</option><option value="equipment">Экипировка</option><option value="state">Состояния</option><option value="rule">Памятка правил</option></select></label>
+    <label class="field-label">МЕСТО / КАТЕГОРИЯ<input class="form-input" id="edit-region" placeholder="например, Забытое Перепутье"></label>
+    <label class="field-label">ГРУППА<input class="form-input" id="edit-group" placeholder="необязательно"></label>
+    <label class="field-label wide">КРАТКОЕ ОПИСАНИЕ<input class="form-input" id="edit-description"></label>
+    <label class="field-label wide">ХАРАКТЕРИСТИКИ <small>одна строка на показатель: Размер: Средний</small><textarea class="form-input stats-input" id="edit-stats" rows="5" spellcheck="false"></textarea></label>
+    <label class="field-label wide">ЧЕРТЫ, СПОСОБНОСТИ И ПОЛНЫЙ ТЕКСТ<textarea class="form-input" id="edit-text" rows="10"></textarea></label>
+    <label class="field-label wide">ИСТОЧНИК / ПРИМЕЧАНИЕ<input class="form-input" id="edit-source"></label>
+  </div><div class="dialog-actions"><button type="button" class="delete-button hidden" id="delete-button">Удалить запись</button><button type="button" class="secondary-button" data-close>Отмена</button><button type="submit" class="primary-button">Сохранить запись <span>→</span></button></div></form></dialog>
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <script src="./app.js" type="module"></script>
+</body>
+</html>
