@@ -70,9 +70,46 @@ function mountHall() {
       benchTimer = setTimeout(() => showView(view, kind), reducedMotion ? 0 : 880);
     };
   });
-  if ($('.bloom-drift').childElementCount) return;
-  $('.bloom-drift').innerHTML = Array.from({length: 13}, (_, i) =>
-    `<span style="--x:${(i * 29 + 3) % 100}%;--size:${17 + (i * 7) % 23}px;--duration:${17 + i % 8}s;--delay:-${i * 2.9}s"></span>`).join('');
+}
+
+function createBloomParticle(type, index) {
+  const particle = document.createElement('span');
+  const flower = type === 'flower';
+  const size = flower ? 17 + (index * 7) % 23 : 2 + (index * 3) % 5;
+  const duration = flower ? 11 + (size - 17) * 0.65 : 13 + (index * 5) % 14;
+  const phase = ((index * 43 + (flower ? 18 : 31)) % 101) / 101;
+  particle.className = flower ? 'bloom-flower' : 'bloom-light';
+  particle.style.setProperty('--x', (index * 29 + (flower ? 3 : 19)) % 100 + '%');
+  particle.style.setProperty('--size', size + 'px');
+  particle.style.setProperty('--duration', duration + 's');
+  particle.style.setProperty('--delay', -duration * phase + 's');
+  return particle;
+}
+
+function mountBloom() {
+  const layer = $('.bloom-drift');
+  const slider = $('#flower-count');
+  const storageKey = 'hallownest-flower-count';
+  const savedCount = localStorage.getItem(storageKey);
+  if (savedCount !== null && /^\d+$/.test(savedCount)) {
+    slider.value = savedCount;
+  }
+  layer.append(...Array.from({length: 22}, (_, index) => createBloomParticle('light', index)));
+
+  const flowers = [];
+  function updateCount() {
+    const count = slider.valueAsNumber;
+    while (flowers.length > count) flowers.pop().remove();
+    while (flowers.length < count) {
+      const flower = createBloomParticle('flower', flowers.length);
+      flowers.push(flower);
+      layer.append(flower);
+    }
+    $('#flower-count-value').value = String(count);
+  }
+  slider.addEventListener('input', updateCount);
+  slider.addEventListener('change', () => localStorage.setItem(storageKey, slider.value));
+  updateCount();
 }
 
 function showView(view, kind = '', query = '') {
@@ -104,6 +141,7 @@ function applyLanguage() {
   $('#atlas-query').placeholder = t('Поиск по всему Атласу…', 'Search the entire atlas…');
   $('#atlas-query').setAttribute('aria-label', $('#atlas-query').placeholder);
   $('#atlas-search button').textContent = t('Найти', 'Search');
+  $('.bloom-settings label').textContent = t('Падающие цветы', 'Falling flowers');
   $('#edit-region').placeholder = t('например, Забытое Перепутье', 'e.g. Forgotten Crossroads');
   $('#edit-group').placeholder = t('необязательно', 'optional');
   const exportLabel = t('Скачать резервную копию', 'Download archive backup');
@@ -167,6 +205,7 @@ function applyLanguage() {
 
 async function boot() {
   applyLanguage();
+  mountBloom();
   wire();
   const loadData = name => fetch(`./data/${name}.json`).then(response => {
     if (!response.ok) throw new Error('Could not load ' + name);
@@ -565,4 +604,5 @@ function toast(message) {
   toastTimer = setTimeout(() => notice.classList.remove('show'), 2600);
 }
 boot();
+
 

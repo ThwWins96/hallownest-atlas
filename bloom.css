@@ -124,20 +124,47 @@ body {
 @keyframes settle-shadow { 0%, 40% { opacity: 0; transform: translateX(-70%) scale(.5); } 65%, 100% { opacity: .54; } }
 @keyframes bench-dust { 0% { opacity: .8; } 100% { opacity: 0; transform: translate(var(--drift), -19px) scale(.5); } }
 .bloom-drift { position: fixed; inset: 0; overflow: hidden; pointer-events: none; z-index: 2; }
+.bloom-settings {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  margin: 12px auto 0;
+  color: #acc5e0;
+  font-size: 11px;
+}
+.bloom-settings input { width: clamp(64px, 23vw, 132px); accent-color: #a3dcf6; }
+.bloom-settings output { min-width: 2ch; font-variant-numeric: tabular-nums; }
 .bloom-drift span {
   position: absolute;
   top: -70px;
   left: var(--x);
   width: var(--size);
   aspect-ratio: 1;
+}
+.bloom-flower {
   background: url('./flower.png?v=3') center 39% / 150% auto no-repeat;
   filter: drop-shadow(0 0 8px #8cd8ff);
   opacity: .48;
   animation: flowerfall var(--duration) var(--delay) linear infinite;
 }
+.bloom-light {
+  border-radius: 50%;
+  background: #c9f2ff;
+  box-shadow: 0 0 7px #a0dfff, 0 0 13px #74b6ec;
+  opacity: .42;
+  animation: lightfall var(--duration) var(--delay) linear infinite;
+}
 @keyframes flowerfall {
   from { transform: translate(0, -35px) rotate(-15deg); }
   to { transform: translate(48px, calc(100vh + 80px)) rotate(95deg); }
+}
+@keyframes lightfall {
+  0% { transform: translate(0, 0); opacity: .12; }
+  27% { opacity: .49; }
+  54% { transform: translate(-24px, 54vh); opacity: .27; }
+  76% { opacity: .54; }
+  100% { transform: translate(18px, calc(100vh + 80px)); opacity: .12; }
 }
 .hero h2#hero-title { font: 500 clamp(40px, 5vw, 65px)/.96 var(--serif); margin: 15px 0; }
 .hero h2#hero-title em { color: var(--teal); }
