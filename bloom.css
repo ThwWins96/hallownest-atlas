@@ -145,26 +145,27 @@ body {
 .bloom-flower {
   background: url('./flower.png?v=3') center 39% / 150% auto no-repeat;
   filter: drop-shadow(0 0 8px #8cd8ff);
-  opacity: .48;
-  animation: flowerfall var(--duration) var(--delay) linear infinite;
+  opacity: var(--glow);
+  animation: flowerfall var(--duration) linear var(--delay);
 }
 .bloom-light {
   border-radius: 50%;
   background: #c9f2ff;
   box-shadow: 0 0 7px #a0dfff, 0 0 13px #74b6ec;
   opacity: .42;
-  animation: lightfall var(--duration) var(--delay) linear infinite;
+  animation: lightfall var(--duration) linear var(--delay);
 }
 @keyframes flowerfall {
-  from { transform: translate(0, -35px) rotate(-15deg); }
-  to { transform: translate(48px, calc(100vh + 80px)) rotate(95deg); }
+  from { transform: translate(0, -25px) rotate(var(--tilt)); }
+  50% { transform: translate(var(--sway), calc(50vh + 27.5px)) rotate(calc((var(--tilt) + var(--turn)) / 2)); }
+  to { transform: translate(var(--drift), calc(100vh + 80px)) rotate(var(--turn)); }
 }
 @keyframes lightfall {
   0% { transform: translate(0, 0); opacity: .12; }
-  27% { opacity: .49; }
-  54% { transform: translate(-24px, 54vh); opacity: .27; }
-  76% { opacity: .54; }
-  100% { transform: translate(18px, calc(100vh + 80px)); opacity: .12; }
+  27% { opacity: var(--glow); }
+  50% { transform: translate(var(--sway), calc(50vh + 40px)); opacity: .21; }
+  76% { opacity: var(--glow); }
+  100% { transform: translate(var(--drift), calc(100vh + 80px)); opacity: .12; }
 }
 .hero h2#hero-title { font: 500 clamp(40px, 5vw, 65px)/.96 var(--serif); margin: 15px 0; }
 .hero h2#hero-title em { color: var(--teal); }

@@ -72,17 +72,27 @@ function mountHall() {
   });
 }
 
-function createBloomParticle(type, index) {
+function createBloomParticle(type, alreadyFalling = true) {
   const particle = document.createElement('span');
   const flower = type === 'flower';
-  const size = flower ? 17 + (index * 7) % 23 : 2 + (index * 3) % 5;
-  const duration = flower ? 11 + (size - 17) * 0.65 : 13 + (index * 5) % 14;
-  const phase = ((index * 43 + (flower ? 18 : 31)) % 101) / 101;
+  const between = (min, max) => min + Math.random() * (max - min);
+  const size = flower ? between(16, 40) : between(2, 6);
+  const duration = flower ? 10 + (size - 16) * 0.7 : between(12, 27);
+  const drift = between(-85, 85);
+  const tilt = between(-65, 65);
   particle.className = flower ? 'bloom-flower' : 'bloom-light';
-  particle.style.setProperty('--x', (index * 29 + (flower ? 3 : 19)) % 100 + '%');
+  particle.style.setProperty('--x', between(0, 99) + '%');
   particle.style.setProperty('--size', size + 'px');
   particle.style.setProperty('--duration', duration + 's');
-  particle.style.setProperty('--delay', -duration * phase + 's');
+  particle.style.setProperty('--delay', (alreadyFalling ? between(-duration, 0) : between(0, 1.4)) + 's');
+  particle.style.setProperty('--drift', drift + 'px');
+  particle.style.setProperty('--sway', (drift / 2 + between(-35, 35)) + 'px');
+  particle.style.setProperty('--tilt', tilt + 'deg');
+  particle.style.setProperty('--turn', (tilt + between(75, 220) * (Math.random() < 0.5 ? -1 : 1)) + 'deg');
+  particle.style.setProperty('--glow', between(0.3, 0.56));
+  particle.addEventListener('animationend', () => {
+    particle.replaceWith(createBloomParticle(type, false));
+  }, {once: true});
   return particle;
 }
 
@@ -94,16 +104,14 @@ function mountBloom() {
   if (savedCount !== null && /^\d+$/.test(savedCount)) {
     slider.value = savedCount;
   }
-  layer.append(...Array.from({length: 22}, (_, index) => createBloomParticle('light', index)));
+  layer.append(...Array.from({length: 22}, () => createBloomParticle('light')));
 
-  const flowers = [];
   function updateCount() {
     const count = slider.valueAsNumber;
+    const flowers = [...layer.querySelectorAll('.bloom-flower')];
     while (flowers.length > count) flowers.pop().remove();
-    while (flowers.length < count) {
-      const flower = createBloomParticle('flower', flowers.length);
-      flowers.push(flower);
-      layer.append(flower);
+    for (let index = flowers.length; index < count; index++) {
+      layer.append(createBloomParticle('flower'));
     }
     $('#flower-count-value').value = String(count);
   }
