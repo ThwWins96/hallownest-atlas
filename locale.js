@@ -1,4 +1,10 @@
 const strings = {
+  'Пути':'Paths', 'Путь':'Path', 'Умения':'Proficiencies', 'Умение':'Proficiency',
+  'Боевые искусства':'Weapon Arts', 'Боевое искусство':'Weapon Art', 'Магия':'Magic', 'Черта':'Trait',
+  'Врождённые особенности':'Innate Traits', 'Военные и мистические':'Martial and Mystic',
+  'Навыки и мастерство':'Skills and Mastery', 'Приёмы и реакции':'Techniques and Reactions',
+  'Тайны и ритуалы':'Arcana and Rituals', 'Поиск по Атласу':'Search the Atlas',
+  'ВСЕ РАЗДЕЛЫ':'ALL SECTIONS', 'Все разделы':'All sections',
   'Режим ГМа': 'GM mode', 'ГМ · закрыть': 'Lock GM mode', 'подключаем архив': 'connecting to archive',
   'общий архив подключён': 'shared archive connected', 'нет связи с общим архивом': 'shared archive offline',
   'сохраняем записи': 'saving records', 'сохранено для всех': 'saved for everyone',

@@ -47,6 +47,12 @@ body {
 }
 .flourish { display: block; width: min(315px, 74%); height: 44px; margin: 0 auto; color: #abd7f0; }
 .hall-heading p { margin: 4px 0 0; color: #afc7e0; font-size: 12px; }
+.atlas-search { display: flex; max-width: 475px; margin: 20px auto 0; gap: 8px; }
+.atlas-search input, .atlas-search button { font: inherit; border: 1px solid var(--line2); border-radius: 7px; padding: 11px 13px; color: var(--paper); }
+.atlas-search input { flex: 1; min-width: 0; background: #101b2e; }
+.atlas-search input::placeholder { color: #a5bad1; }
+.atlas-search button { cursor: pointer; background: #203853; }
+.atlas-search button:hover { background: #2b4a6e; }
 .benches { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; align-self: start; }
 .bench-choice {
   min-width: 0;

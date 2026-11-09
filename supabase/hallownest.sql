@@ -51,7 +51,10 @@ begin
       or coalesce(jsonb_typeof(entry->'id'), '') <> 'string'
       or coalesce(jsonb_typeof(entry->'name'), '') <> 'string'
       or length(trim(entry->>'name')) = 0
-      or coalesce(entry->>'kind', '') not in ('разумные', 'дикие', 'equipment', 'state', 'rule')
+      or coalesce(entry->>'kind', '') not in (
+        'разумные', 'дикие', 'equipment', 'state', 'rule',
+        'trait', 'path', 'proficiency', 'art', 'spell'
+      )
       or coalesce(jsonb_typeof(entry->'stats'), 'object') <> 'object'
   ) or exists (
     select 1 from jsonb_array_elements(p_entries) as entry

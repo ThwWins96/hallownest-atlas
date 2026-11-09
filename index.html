@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./bloom.css?v=4">
+  <link rel="stylesheet" href="./bloom.css?v=5">
 </head>
 <body>
   <div class="fog fog-one"></div><div class="fog fog-two"></div>
@@ -35,6 +35,10 @@
           <h1 id="hall-title">Hallownest Atlas</h1>
           <svg class="flourish" aria-hidden="true"><use href="./symbols.svg#flourish"/></svg>
           <p>Choose a bench to open a section.</p>
+        <form id="atlas-search" class="atlas-search" role="search">
+          <input id="atlas-query" type="search" placeholder="Search the entire atlas…" aria-label="Search the entire atlas" required>
+          <button type="submit">Search</button>
+        </form>
         </div>
         <nav class="benches" id="benches" aria-label="Лавочки с разделами"></nav>
       </section>
@@ -90,7 +94,7 @@
     <label class="field-label wide">ИСТОЧНИК / ПРИМЕЧАНИЕ<input class="form-input" id="edit-source"></label>
   </div><div class="dialog-actions"><button type="button" class="delete-button hidden" id="delete-button">Удалить запись</button><button type="button" class="secondary-button" data-close>Отмена</button><button type="submit" class="primary-button">Сохранить запись <span>→</span></button></div></form></dialog>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="./app.js?v=4" type="module"></script>
+  <script src="./app.js?v=5" type="module"></script>
 </body>
 </html>
 

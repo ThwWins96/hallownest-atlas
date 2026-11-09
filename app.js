@@ -1,13 +1,22 @@
 import {readArchive, writeArchive} from './archive-api.js';
-import {language, setLanguage, t, cleanText} from './locale.js?v=4';
+import {language, setLanguage, t, cleanText} from './locale.js?v=5';
 
-const KIND_LABEL = {разумные:'Разумный жук',дикие:'Дикое существо',equipment:'Экипировка',state:'Состояние',rule:'Памятка'};
+const KIND_LABEL = {
+  разумные:'Разумный жук', дикие:'Дикое существо', equipment:'Экипировка', state:'Состояние',
+  rule:'Памятка', trait:'Черта', path:'Путь', proficiency:'Умение', art:'Боевое искусство', spell:'Магия'
+};
 const STAT_LABEL = {size:'Размер',might:'Мощь',accuracy:'Прон',shell:'Панц',grace:'Грац',hearts:'Сердца',souls:'Души',stamina:'Выносливость',speed:'Скорость',dread:'Жуть',charm:'Привлекательность',hunger:'Голод',traits:'Черты',geo:'Гео',quality:'Качество',heavy:'Вес',max:'Максимум',обычный:'Обычный',необычный:'Необычный',редкий:'Редкий',уникальный:'Уникальный'};
 const VIEW_META = {
   bestiary:{title:'Бестиарий',kicker:'АРХИВ ОБИТАТЕЛЕЙ',types:['разумные','дикие']},
   equipment:{title:'Экипировка',kicker:'СНАРЯЖЕНИЕ СТРАННИКА',types:['equipment']},
   states:{title:'Состояния',kicker:'ПОЛЕВЫЕ ЗАМЕТКИ',types:['state']},
-  rules:{title:'Памятка',kicker:'КОРОТКИЙ СВОД ПРАВИЛ',types:['rule']}
+  rules:{title:'Памятка',kicker:'КОРОТКИЙ СВОД ПРАВИЛ',types:['rule']},
+  traits:{title:'Черты',kicker:'КОРОТКИЙ СВОД ПРАВИЛ',types:['trait']},
+  paths:{title:'Пути',kicker:'КОРОТКИЙ СВОД ПРАВИЛ',types:['path']},
+  proficiencies:{title:'Умения',kicker:'КОРОТКИЙ СВОД ПРАВИЛ',types:['proficiency']},
+  arts:{title:'Боевые искусства',kicker:'КОРОТКИЙ СВОД ПРАВИЛ',types:['art']},
+  magic:{title:'Магия',kicker:'КОРОТКИЙ СВОД ПРАВИЛ',types:['spell']},
+  search:{title:'Поиск по Атласу',kicker:'ВСЕ РАЗДЕЛЫ'}
 };
 const STAT_ORDER=['size','might','accuracy','shell','grace','hearts','souls','stamina','speed','dread','charm','hunger','geo','quality','heavy','max','обычный','необычный','редкий','уникальный'];
 let db=[];let defaults=[];let currentView='bestiary';let activeFilter='Все';let selectedId=null;let gmUnlocked=false;let toastTimer;
@@ -29,9 +38,14 @@ localStorage.removeItem('hallownest-editor-key');
 const benches = [
   ['bestiary', 'разумные', 'Разумные жуки', 'Записки Дуэлянта'],
   ['bestiary', 'дикие', 'Дикие существа', 'Журнал Скальда'],
-  ['equipment', '', 'Экипировка', 'Оружие и амулеты'],
-  ['states', '', 'Состояния', 'Сердца и эффекты'],
-  ['rules', '', 'Памятка правил', 'Броски и бой']
+  ['equipment', 'equipment', 'Экипировка', 'Оружие и амулеты'],
+  ['states', 'state', 'Состояния', 'Сердца и эффекты'],
+  ['rules', 'rule', 'Памятка правил', 'Броски и бой'],
+  ['traits', 'trait', 'Черты', 'Врождённые особенности'],
+  ['paths', 'path', 'Пути', 'Военные и мистические'],
+  ['proficiencies', 'proficiency', 'Умения', 'Навыки и мастерство'],
+  ['arts', 'art', 'Боевые искусства', 'Приёмы и реакции'],
+  ['magic', 'spell', 'Магия', 'Тайны и ритуалы']
 ];
 
 function mountHall() {
@@ -61,13 +75,13 @@ function mountHall() {
     `<span style="--x:${(i * 29 + 3) % 100}%;--size:${17 + (i * 7) % 23}px;--duration:${17 + i % 8}s;--delay:-${i * 2.9}s"></span>`).join('');
 }
 
-function showView(view, kind = '') {
+function showView(view, kind = '', query = '') {
   clearTimeout(benchTimer);
   currentView = view;
   activeBench = kind;
   activeFilter = 'Все';
   selectedId = null;
-  $('#search').value = '';
+  $('#search').value = query;
   $('#workspace').classList.remove('hidden');
   render();
   renderDetail(null);
@@ -87,6 +101,9 @@ function applyLanguage() {
   $('.brand').setAttribute('aria-label', t('Атлас Халлоунеста, на главную', 'Hallownest Atlas home'));
   $('#benches').setAttribute('aria-label', t('Лавочки с разделами', 'Section benches'));
   $('#search').placeholder = t('Найти запись…', 'Find an entry…');
+  $('#atlas-query').placeholder = t('Поиск по всему Атласу…', 'Search the entire atlas…');
+  $('#atlas-query').setAttribute('aria-label', $('#atlas-query').placeholder);
+  $('#atlas-search button').textContent = t('Найти', 'Search');
   $('#edit-region').placeholder = t('например, Забытое Перепутье', 'e.g. Forgotten Crossroads');
   $('#edit-group').placeholder = t('необязательно', 'optional');
   const exportLabel = t('Скачать резервную копию', 'Download archive backup');
@@ -139,9 +156,10 @@ function applyLanguage() {
   $('.source-note span').replaceChildren(
     t('Правила HKRPG v1.7', 'HKRPG Rulebook v1.0.15'), document.createElement('br'),
     t('Журнал Скальда'), document.createElement('br'), t('Записки Дуэлянта'));
-  $('#edit-kind').querySelectorAll('option').forEach((option, index) => {
-    option.textContent = t(benches[index][2]);
-  });
+  const editKind = $('#edit-kind');
+  const selectedKind = editKind.value;
+  editKind.replaceChildren(...benches.map(([,kind,title]) => new Option(t(title), kind)));
+  if (selectedKind) editKind.value = selectedKind;
   $('#gm-label').textContent = t(gmUnlocked ? 'ГМ · закрыть' : 'Режим ГМа');
   setArchiveStatus(archiveStatus);
   mountHall();
@@ -154,9 +172,10 @@ async function boot() {
     if (!response.ok) throw new Error('Could not load ' + name);
     return response.json();
   });
-  const backups = Promise.all(['intelligent', 'wild', 'reference'].map(loadData))
-    .then(([intelligent, wild, reference]) => {
-      defaults = [...intelligent, ...wild, ...reference.equipment];
+  const books = ['trait', 'path', 'proficiency', 'art', 'spell'].map(kind => 'book-' + kind);
+  const backups = Promise.all(['intelligent', 'wild', 'reference', ...books].map(loadData))
+    .then(([intelligent, wild, reference, ...compendium]) => {
+      defaults = [...intelligent, ...wild, ...reference.equipment, ...compendium.flat()];
       originals = new Map(defaults.map(record => [record.id, record]));
       if (archiveRevision === null) db = defaults;
     });
@@ -252,10 +271,42 @@ function localizeRecord(record, locale = language) {
 }
 
 function typeRecords() {
-  return db.filter(record => VIEW_META[currentView].types.includes(record.kind) && (!activeBench || record.kind === activeBench))
+  return db.filter(record => currentView === 'search'
+    || (VIEW_META[currentView].types.includes(record.kind) && (!activeBench || record.kind === activeBench)))
     .map(record => localizeRecord(record)).filter(Boolean);
 }
+
+function normalizeQuery(value) {
+  return String(value).normalize('NFKD').toLowerCase()
+    .replace(/\p{M}/gu, '').replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+}
+
+function searchAtlas(query) {
+  const words = normalizeQuery(query).split(' ').filter(Boolean);
+  if (!words.length) return [];
+  const kindFilter = activeFilter === 'Все' ? null : activeFilter;
+  const results = [];
+  for (const record of db) {
+    if (kindFilter && record.kind !== kindFilter) continue;
+    const item = localizeRecord(record);
+    if (!item) continue;
+    const alternate = localizeRecord(record, language === 'en' ? 'ru' : 'en');
+    const names = normalizeQuery([item.name, alternate?.name].join(' '));
+    const content = [item, alternate].filter(Boolean).flatMap(entry =>
+      [entry.name, entry.region, entry.group, entry.description, entry.text, ...Object.values(entry.stats)]);
+    const section = KIND_LABEL[item.kind] ?? '';
+    const haystack = normalizeQuery([...content, section, t(section)].join(' '));
+    if (words.every(word => haystack.includes(word))) {
+      const rank = words.every(word => names.includes(word)) ? 2 : words.some(word => names.includes(word)) ? 1 : 0;
+      results.push({item, rank});
+    }
+  }
+  return results.sort((a,b) => b.rank - a.rank || a.item.name.localeCompare(b.item.name, language))
+    .map(result => result.item);
+}
+
 function filteredRecords() {
+  if (currentView === 'search') return searchAtlas($('#search').value);
   const query = $('#search').value.trim().toLocaleLowerCase(language);
   return typeRecords().filter(record =>
     (activeFilter === 'Все' || record.region === activeFilter || record.group === activeFilter)
@@ -274,15 +325,48 @@ function render() {
   renderFilters();
   renderList();
 }
-function renderNav(){const counts={};for(const r of typeRecords())counts[r.region]=(counts[r.region]||0)+1;const items=['Все',...regionsForView()];$('#side-nav').innerHTML=items.map((x,i)=>`<button class="${activeFilter===x?'active':''}" data-filter="${esc(x)}"><span>${esc(x==='Все'?t(currentView==='bestiary'?'Все записи':'Все заметки'):x)}</span><span>${i===0?typeRecords().length:counts[x]}</span></button>`).join('');$('#side-nav').querySelectorAll('button').forEach(b=>b.onclick=()=>{activeFilter=b.dataset.filter;selectedId=null;render();renderDetail(null);});}
-function renderFilters(){const groups=[...new Set(typeRecords().map(x=>x.group).filter(Boolean))].sort((a,b)=>a.localeCompare(b,language));const options=['Все',...groups];$('#filters').innerHTML=options.map(x=>`<button class="filter-chip ${activeFilter===x?'active':''}" data-filter="${esc(x)}">${esc(x==='Все'?t(x):x)}</button>`).join('');$('#filters').querySelectorAll('button').forEach(b=>b.onclick=()=>{activeFilter=b.dataset.filter;selectedId=null;render();renderDetail(null);});}
+function renderNav() {
+  const records = typeRecords();
+  const searching = currentView === 'search';
+  const counts = new Map();
+  for (const record of records) {
+    const key = searching ? record.kind : record.region;
+    counts.set(key, (counts.get(key) ?? 0) + 1);
+  }
+  const options = searching ? benches.map(([,kind,title]) => [kind,t(title)])
+    : regionsForView().map(region => [region,region]);
+  options.unshift(['Все', t(searching ? 'Все разделы' : 'Все записи')]);
+  $('#side-nav').innerHTML = options.map(([key,label]) =>
+    `<button class="${activeFilter===key?'active':''}" data-filter="${esc(key)}"><span>${esc(label)}</span><span>${key === 'Все' ? records.length : counts.get(key) ?? 0}</span></button>`).join('');
+  $('#side-nav').querySelectorAll('button').forEach(button => {
+    button.onclick = () => { activeFilter = button.dataset.filter; selectedId = null; render(); renderDetail(null); };
+  });
+}
+
+function renderFilters() {
+  const records = typeRecords();
+  if (currentView === 'search' || records.every(record => !record.group || record.group === record.region)) {
+    $('#filters').replaceChildren();
+    return;
+  }
+  const groups = [...new Set(records.map(record => record.group).filter(Boolean))].sort((a,b) => a.localeCompare(b,language));
+  $('#filters').innerHTML = ['Все', ...groups].map(group =>
+    `<button class="filter-chip ${activeFilter===group?'active':''}" data-filter="${esc(group)}">${esc(group==='Все'?t(group):group)}</button>`).join('');
+  $('#filters').querySelectorAll('button').forEach(button => {
+    button.onclick = () => { activeFilter = button.dataset.filter; selectedId = null; render(); renderDetail(null); };
+  });
+}
 function statPairs(item) {
   const stats = item.stats ?? {};
   return [...new Set([...STAT_ORDER, ...Object.keys(stats)])]
     .filter(key => stats[key] !== undefined && stats[key] !== '' && key !== 'traits')
     .map(key => [t(STAT_LABEL[key] ?? key), stats[key]]);
 }
-function renderList(){const list=filteredRecords();$('#record-list').innerHTML=list.length?list.map(item=>{
+function renderList(){const list=filteredRecords();
+  if (currentView === 'search') {
+    $('#section-kicker').textContent = t(`НАЙДЕНО: ${list.length}`, `RESULTS: ${list.length}`);
+  }
+  $('#record-list').innerHTML=list.length?list.map(item=>{
   const stats=statPairs(item).slice(0,4).map(([k,v])=>`<span class="stat-pill">${esc(k)} ${esc(v)}</span>`).join('');
   return `<article class="record-card ${item.id===selectedId?'selected':''}" tabindex="0" role="button" data-id="${esc(item.id)}"><div class="card-top"><div><div class="card-name">${esc(item.name)}</div><div class="card-region">${esc(item.region||t('Без привязки'))}</div></div><span class="kind-mark ${item.kind==='дикие'?'wild':''}">${esc(t(KIND_LABEL[item.kind]||'Запись'))}</span></div>${item.description?`<p class="card-description">${esc(item.description)}</p>`:''}${stats?`<div class="stat-line">${stats}</div>`:''}${item.stats?.traits?`<div class="card-traits">${esc(item.stats.traits)}</div>`:''}${gmUnlocked?'<button class="edit-mini" data-edit="'+esc(item.id)+'">' + t('ИЗМЕНИТЬ') + '</button>':''}</article>`;
  }).join(''):`<div class="empty-results"><b>${t('Следов не найдено')}</b><span>${t('Попробуй другое слово или очисти фильтр.')}</span></div>`;
@@ -296,11 +380,16 @@ function renderDetail(id){const raw=db.find(x=>x.id===id);const item=raw&&locali
   $('#detail-panel').querySelectorAll('[data-detail-edit]').forEach(b=>b.onclick=()=>openEditor(b.dataset.detailEdit));$('#detail-panel').querySelectorAll('[data-detail-delete]').forEach(b=>b.onclick=()=>deleteRecord(b.dataset.detailDelete));
 }
 function wire(){
+  $('#atlas-search').onsubmit = event => {
+    event.preventDefault();
+    const query = $('#atlas-query').value.trim();
+    if (normalizeQuery(query)) showView('search', '', query);
+  };
   $('#language-switch').onchange = event => {
     clearTimeout(benchTimer);
     setLanguage(event.target.value);
     activeFilter = 'Все';
-    $('#search').value = '';
+    if (currentView !== 'search') $('#search').value = '';
     applyLanguage();
     render();
     renderDetail(selectedId);
@@ -352,7 +441,13 @@ function wire(){
   document.querySelectorAll('[data-close]').forEach(b=>b.onclick=()=>$('#edit-dialog').close());
   $('#edit-form').onsubmit=saveEditor;$('#add-button').onclick=()=>openEditor(null);$('#delete-button').onclick=()=>deleteRecord($('#edit-id').value);
   $('#export-button').onclick=exportData;$('#import-file').onchange=importData;$('#reset-button').onclick=resetData;
-  document.addEventListener('keydown',e=>{if(e.key==='/'&&document.activeElement.tagName!=='INPUT'&&document.activeElement.tagName!=='TEXTAREA'){e.preventDefault();$('#search').focus();}if(e.key==='Escape'&&$('#edit-dialog').open)$('#edit-dialog').close();});
+  document.addEventListener('keydown', event => {
+    if (event.key === '/' && !event.target.closest('input, textarea, select, [contenteditable]') && !document.querySelector('dialog[open]')) {
+      event.preventDefault();
+      $($('#workspace').classList.contains('hidden') ? '#atlas-query' : '#search').focus();
+    }
+    if (event.key === 'Escape' && $('#edit-dialog').open) $('#edit-dialog').close();
+  });
 }
 function lockGM(){gmUnlocked=false;editorCredential='';$('#gm-toggle').classList.remove('unlocked');$('#gm-label').textContent=t('Режим ГМа');$('#gm-tools').classList.add('hidden');renderList();renderDetail(selectedId);toast('Режим ГМа закрыт.');}
 function openEditor(id) {
@@ -364,8 +459,7 @@ function openEditor(id) {
   $('#edit-title').textContent = t(item ? 'Редактировать запись' : 'Новая запись')
     + (item ? ' · ' + editLanguage.toUpperCase() : '');
   $('#edit-id').value = item?.id ?? '';
-  $('#edit-kind').value = item?.kind ?? (activeBench
-    || ({equipment:'equipment',states:'state',rules:'rule'}[currentView] ?? 'разумные'));
+  $('#edit-kind').value = item?.kind ?? (activeBench || VIEW_META[currentView].types?.[0] || 'разумные');
   for (const field of localizedFields) $('#edit-' + field).value = item?.[field] ?? '';
   $('#edit-stats').value = Object.entries(item?.stats ?? {})
     .map(([key, value]) => `${t(STAT_LABEL[key] ?? key)}: ${value}`).join('\n');
