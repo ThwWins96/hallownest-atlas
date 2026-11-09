@@ -15,6 +15,16 @@
 body {
   background: radial-gradient(ellipse at 50% 16%, #21385a 0, #101b32 37%, transparent 68%), #0b1122;
 }
+body::before {
+  content: "";
+  position: fixed;
+  inset: 8vh max(4vw, calc((100vw - 1050px) / 2));
+  z-index: 0;
+  background: url('./hallownest-backdrop.png') center / contain no-repeat;
+  opacity: .28;
+  filter: saturate(.82);
+  pointer-events: none;
+}
 .brand-emblem { width: 33px; height: 36px; color: #d5f7ff; filter: drop-shadow(0 0 9px #98d9ff66); }
 .language-switch { color: var(--paper); background: var(--ink2); border: 1px solid var(--line2); padding: 8px; cursor: pointer; }
 .top-actions { min-width: 0; }
