@@ -1,6 +1,6 @@
 import {readArchive, writeArchive} from './archive-api.js';
 import {language, setLanguage, t, cleanText} from './locale.js?v=10';
-import {facetFields, getFacets, keyText, statKey, englishStatValue, spellStatOrder, spellStatValue, normalizeSpellFields, topicOf, templates, traitEffect, buildTotals, makeReferenceIndex} from './catalog.js?v=14';
+import {facetFields, getFacets, keyText, statKey, englishStatValue, spellStatOrder, spellStatValue, normalizeSpellFields, normalizeTraitFields, topicOf, templates, traitEffect, devourerCosts, buildTotals, makeReferenceIndex} from './catalog.js?v=15';
 
 const KIND_LABEL = {
   разумные:'Разумный жук', дикие:'Дикое существо', equipment:'Экипировка', state:'Состояние',
@@ -75,7 +75,7 @@ function mountHall() {
       <span class="bench-stage">
         <svg class="bench-drawing" aria-hidden="true"><use href="./symbols.svg#bench"/></svg>
         <span class="bench-shadow" aria-hidden="true"></span>
-        <svg class="bench-bug" aria-hidden="true"><use href="./symbols.svg?v=4#bug"/></svg>
+        <img class="bench-bug" src="./bench-knight.svg" alt="" draggable="false">
         <span class="bench-sparks" aria-hidden="true"><i></i><i></i><i></i></span>
       </span>
       <strong>${benchLabel(view, title)}</strong><small>${t(subtitle)}</small>
@@ -354,7 +354,7 @@ function localizeRecord(record, locale = language) {
         (key === 'hearts' && /^\.\s*Этот урон нельзя уменьшить\.$/iu.test(value)))) continue;
       let candidate = personalValue ?? stock ?? value;
       if (numericStats.has(key)) {
-        candidate = englishStatValue(key,value);
+        candidate = englishStatValue(key,value === undefined || value === '' ? candidate : value);
         if (/\p{Script=Cyrillic}/u.test(candidate) && unchanged) candidate = personalValue ?? stock ?? candidate;
       }
       pairs.push([key,cleanText(englishStatValue(key,candidate))]);
@@ -365,6 +365,7 @@ function localizeRecord(record, locale = language) {
   }
   result.topic = topicOf(record) || topicOf(result);
   if (result.topic) result.kind = 'rule';
+  if (result.kind === 'trait') return normalizeTraitFields(result);
   if (result.kind !== 'spell') return result;
   const spell = normalizeSpellFields(result);
   const alternate = normalizeSpellFields(effectiveLocale === 'en' ? record : personal ?? {});
@@ -490,7 +491,8 @@ function renderCatalogActions() {
     $('#open-builder').onclick = () => {
       renderBuilder();
       $('#builder-dialog').showModal();
-      $('#builder-search').focus();
+      $('#builder-search').focus({preventScroll:true});
+      $('#builder-dialog').scrollTop = 0;
     };
   }
 }
@@ -586,7 +588,7 @@ function statPairs(item) {
   const required = item.kind === 'spell' ? spellStatOrder : [];
   return [...new Set([...required, ...STAT_ORDER, ...Object.keys(stats)])]
     .filter(key => required.includes(key) || (stats[key] !== undefined && stats[key] !== '' && key !== 'traits'))
-    .map(key => [statLabel(key), stats[key] || t('Не указано','Not specified')]);
+    .map(key => [statLabel(key), stats[key] === '' || stats[key] == null ? t('Не указано','Not specified') : stats[key]]);
 }
 function renderList(){const list=filteredRecords();
   if (currentView === 'search') {
@@ -777,9 +779,11 @@ function showReferenceTip(anchor) {
   hideReferenceTip();
   const tip = $('#reference-tip');
   (anchor.closest('dialog') ?? document.body).append(tip);
-  const summary = (item.description || item.text || item.region).replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_,name,label) => label ?? name)
+  const source = item.kind === 'trait' ? [item.description,item.text].filter(Boolean).join(' · ') : item.description || item.text;
+  const summary = (source || item.region).replace(/\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (_,name,label) => label ?? name)
     .replace(/\*\*|==/g, '').replace(/\s+/g, ' ').trim();
   tip.innerHTML = '<small>' + esc(t(KIND_LABEL[item.kind] || 'Запись')) + '</small><strong>' + esc(item.name) + '</strong>'
+    + (item.kind === 'trait' ? '<small>' + statPairs(item).slice(0,4).map(([key,value]) => esc(key + ' ' + value)).join(' · ') + '</small>' : '')
     + (summary ? '<span>' + esc(summary.length > 200 ? summary.slice(0, 197).trimEnd() + '…' : summary) + '</span>' : '');
   tip.classList.remove('hidden');
   tipAnchor = anchor;
@@ -796,6 +800,7 @@ function wireCatalogTools() {
   $('#close-reading').onclick = () => closeExpanded(true);
   dialog.addEventListener('close', () => { if (!dialog.open) closeExpanded(true); });
   $('#close-builder').onclick = () => $('#builder-dialog').close();
+  $('#builder-dialog').addEventListener('close', hideReferenceTip);
   $('#builder-search').oninput = renderBuilderList;
   $('#edit-kind').onchange = toggleRuleTopicField;
   $('#translate-draft').onclick = translateDraft;
@@ -839,29 +844,88 @@ function numberLabel(value) {
   return value.toLocaleString(language, {maximumFractionDigits:2});
 }
 
-function renderBuilderList() {
-  const query = normalizeQuery($('#builder-search').value);
-  const traits = builderTraits().filter(item => normalizeQuery([item.name,item.group,item.region].join(' ')).includes(query))
-    .sort((a,b) => a.name.localeCompare(b.name,language));
-  $('#builder-list').innerHTML = traits.map(item => {
-    const selected = buildTraits.has(item.id);
-    const effect = traitEffect(item, buildSize, buildTraits.get(item.id));
-    return '<div class="builder-choice"><span><a data-ref="' + esc(item.id) + '" href="' + recordHref(item.id) + '">'
-      + esc(item.name) + '</a><small>' + esc(catalogGroup(item, 'region')) + '</small></span><button class="filter-chip" type="button" data-build="' + esc(item.id) + '" aria-pressed="' + selected + '">'
-      + (selected ? '✓ ' + esc(t('Убрать','Remove')) : '+ ' + esc(t('Взять','Add'))) + ' · '
-      + esc(numberLabel(effect.hunger)) + (effect.variableCost ? '*' : '') + '</button></div>';
-  }).join('') || '<p>' + esc(t('Следов не найдено')) + '</p>';
-  $('#builder-list').querySelectorAll('[data-build]').forEach(button => button.onclick = () => {
-    const id = button.dataset.build;
-    if (buildTraits.has(id)) buildTraits.delete(id);
-    else buildTraits.set(id, {});
-    renderBuilder();
-    [...$('#builder-list').querySelectorAll('[data-build]')].find(next => next.dataset.build === id)?.focus({preventScroll:true});
+function builderTraitLink(item) {
+  return referenceLink(item.name,item,new Set());
+}
+
+function builderParents(item, traits) {
+  const traitId = number => 'book-trait-' + number;
+  const requirement = String(item.stats.prerequisite || item.description.match(/^\s*(?:Требует(?: черту)?|Requires)\s+(.+)$/iu)?.[1]
+    || originals.get(item.id)?.en?.description?.match(/^Requires\s+(.+)$/i)?.[1] || '').replace(/[«»“”"]/g,'').trim();
+  const named = requirement && traits.find(other => {
+    const original = originals.get(other.id);
+    return [other.name, original?.name, original?.en?.name].some(name => keyText(name) === keyText(requirement));
+  });
+  const extra = {
+    '003':['024','027','131','132'], '015':['024','027','131','132'],
+    '027':['001','002','021'], '064':['001','002','021','027'],
+    '122':['119'], '128':['107']
+  }[item.id.replace('book-trait-','')] ?? [];
+  const any = ['069','070'].some(number => item.id === traitId(number));
+  const ids = new Set([named?.id, ...extra.map(traitId)]);
+  return {
+    required: Boolean(named || ['003','015'].some(number => item.id === traitId(number))),
+    candidates: traits.filter(other => other.id !== item.id && (any || ids.has(other.id)))
+  };
+}
+
+function availableBuilderParents(item, candidates) {
+  return candidates.filter(parent => {
+    if (!buildTraits.has(parent.id)) return false;
+    for (let id = parent.id; id; id = buildTraits.get(id)?.parent) {
+      if (id === item.id) return false;
+    }
+    return true;
   });
 }
 
-function builderInput(key, value) {
-  return '<input class="form-input" data-build-setting="' + esc(key) + '" type="number" step="0.5" value="' + esc(value) + '">';
+function removeBuilderTrait(id) {
+  buildTraits.delete(id);
+  for (const [child, settings] of buildTraits) {
+    if (settings.parent !== id) continue;
+    if (settings.requiredParent) removeBuilderTrait(child);
+    else delete settings.parent;
+  }
+}
+
+function renderBuilderList() {
+  hideReferenceTip();
+  const list = $('#builder-list');
+  const scrollTop = list.scrollTop;
+  const query = normalizeQuery($('#builder-search').value);
+  const all = builderTraits();
+  const traits = all.filter(item => normalizeQuery([item.name,item.group,item.region].join(' ')).includes(query))
+    .sort((a,b) => a.name.localeCompare(b.name,language));
+  list.innerHTML = traits.map(item => {
+    const selected = buildTraits.has(item.id);
+    const effect = traitEffect(item, buildSize, buildTraits.get(item.id));
+    const {required,candidates} = builderParents(item,all);
+    const blocked = !selected && required && !availableBuilderParents(item,candidates).length;
+    const requirement = blocked ? ' · ' + t('Требуется: ', 'Requires: ') + candidates.map(parent => parent.name).join(' / ') : '';
+    return '<div class="builder-choice"><span>' + builderTraitLink(item)
+      + '<small>' + esc(catalogGroup(item, 'region') + requirement) + '</small></span><button class="filter-chip" type="button" data-build="'
+      + esc(item.id) + '" aria-pressed="' + selected + '"' + (blocked ? ' disabled' : '') + '>'
+      + (selected ? '✓ ' + esc(t('Убрать','Remove')) : '+ ' + esc(t('Взять','Add'))) + ' · '
+      + esc(numberLabel(effect.hunger)) + (effect.variableCost || effect.poolChoice ? '*' : '') + '</button></div>';
+  }).join('') || '<p>' + esc(t('Следов не найдено')) + '</p>';
+  list.scrollTop = scrollTop;
+  list.querySelectorAll('[data-build]').forEach(button => button.onclick = () => {
+    const id = button.dataset.build;
+    if (buildTraits.has(id)) removeBuilderTrait(id);
+    else {
+      const item = all.find(trait => trait.id === id);
+      const {required,candidates} = builderParents(item,all);
+      const parent = required ? availableBuilderParents(item,candidates)[0]?.id : undefined;
+      if (required && !parent) return;
+      buildTraits.set(id,{parent,requiredParent:required});
+    }
+    renderBuilder();
+    [...list.querySelectorAll('[data-build]')].find(next => next.dataset.build === id)?.focus({preventScroll:true});
+  });
+}
+
+function builderInput(key, value, constraints = 'step="0.5"') {
+  return '<input class="form-input" data-build-setting="' + esc(key) + '" type="number" ' + constraints + ' value="' + esc(value) + '">';
 }
 
 function builderSelect(key, options, value) {
@@ -870,6 +934,7 @@ function builderSelect(key, options, value) {
 }
 
 function traitCopies(item) {
+  if (item.id === 'book-trait-026') return Infinity;
   const raw = db.find(record => record.id === item.id);
   const text = [item.text, raw?.text, raw?.en?.text].join(' ');
   if (/may be taken up to three times|можно взять до тр[её]х раз/iu.test(text)) return 3;
@@ -877,10 +942,12 @@ function traitCopies(item) {
 }
 
 function renderBuilderSummary(selected) {
-  const all = selected.flatMap(({item,settings}) => Array.from({length:settings.count ?? 1}, (_, index) => ({
-    item,
-    settings: item.id === 'book-trait-029' && index ? {...settings,cost:2} : settings
-  })));
+  const all = selected.flatMap(({item,settings}) => {
+    const count = settings.count ?? 1;
+    return item.id === 'book-trait-029' && count > 1
+      ? [{item,settings},{item,settings:{...settings,cost:2},count:count - 1}]
+      : [{item,settings,count}];
+  });
   const {stats,points} = buildTotals(all,buildSize,buildAdjustments);
   $('#builder-summary').innerHTML = '<p class="builder-points" role="status"><b>' + esc(t('Очки черт','Trait points'))
     + ' · ' + esc(numberLabel(points)) + ' / 16</b>'
@@ -907,23 +974,48 @@ function renderBuilder() {
     renderBuilder();
     $('#builder-search').focus();
   };
-  const selected = builderTraits().filter(item => buildTraits.has(item.id)).map(item => ({item, settings:buildTraits.get(item.id)}));
+  const traits = builderTraits();
+  const byId = new Map(traits.map(item => [item.id,item]));
+  const selected = [...buildTraits].filter(([id]) => byId.has(id)).map(([id,settings]) => ({item:byId.get(id),settings}));
   renderBuilderSummary(selected);
-  $('#builder-selected').innerHTML = selected.length ? '<h3>' + esc(t('Выбранные черты','Selected traits')) + '</h3>'
-    + selected.map(({item,settings}) => {
-      const effect = traitEffect(item, buildSize, settings);
-      const [,first,second] = effect.exchange ?? [];
-      const copies = traitCopies(item);
-      return '<div class="builder-choice" data-selected-trait="' + esc(item.id) + '"><span>' + esc(item.name) + '</span><div>'
-        + (copies > 1 ? '<label>' + esc(t('Количество','Copies')) + builderSelect('count',
-          Array.from({length:copies}, (_, index) => [String(index + 1), String(index + 1)]), String(settings.count ?? 1)) + '</label>' : '')
-        + (effect.variableCost ? '<label>' + esc(t('Цена черты','Trait cost')) + builderInput('cost',effect.hunger) + '</label>' : '')
-        + (effect.choice ? '<label>' + esc(t('Бонус к','Bonus to')) + builderSelect('social',
-          ['dread','charm'].map(key => [key,statLabel(key)]),settings.social ?? 'dread') + '</label>' : '')
-        + (second ? '<label>' + esc(t('Убавить из','Reduce')) + builderSelect('trade',
-          [first,second].map(key => [key,statLabel(key)]),settings.trade ?? first) + '</label>' : '')
-        + '<button class="filter-chip" type="button" data-remove-build="' + esc(item.id) + '">' + esc(t('Убрать','Remove')) + '</button></div></div>';
-    }).join('') : '';
+  const roots = selected.filter(({settings}) => !byId.has(settings.parent) || !buildTraits.has(settings.parent));
+  const selection = $('#builder-selected');
+  const scrollTop = selection.querySelector('.builder-slots')?.scrollTop ?? 0;
+  const closed = new Set([...selection.querySelectorAll('details[data-subtraits]:not([open])')].map(details => details.dataset.subtraits));
+  const renderSlot = ({item,settings}) => {
+    const effect = traitEffect(item, buildSize, settings);
+    const [,first,second] = effect.exchange ?? [];
+    const copies = traitCopies(item);
+    const count = String(settings.count ?? 1);
+    const {required,candidates} = builderParents(item,traits);
+    const parents = availableBuilderParents(item,candidates);
+    const parentOptions = [...(required ? [] : [['',t('Отдельная черта','Standalone trait')]]),
+      ...parents.map(parent => [parent.id,parent.name])];
+    const children = selected.filter(entry => entry.settings.parent === item.id);
+    const quantity = copies === Infinity ? builderInput('count',count,'min="1" step="1"')
+      : copies > 1 ? builderSelect('count',Array.from({length:copies}, (_, index) => [String(index + 1), String(index + 1)]),count) : '';
+    const poolLabels = {hearts:t('Сердце','Heart'),souls:t('Душа','Soul'),stamina:t('Выносливость','Stamina')};
+    return '<li><div class="builder-choice" data-selected-trait="' + esc(item.id) + '"><span>' + builderTraitLink(item) + '</span><div>'
+      + (quantity ? '<label>' + esc(t('Количество','Copies')) + quantity + '</label>' : '')
+      + (effect.poolChoice ? '<label>' + esc(t('Запас','Pool')) + builderSelect('pool',Object.entries(devourerCosts)
+        .map(([key,cost]) => [key,poolLabels[key] + ' · ' + cost]),settings.pool ?? 'hearts') + '</label>' : '')
+      + (effect.variableCost ? '<label>' + esc(t('Цена черты','Trait cost')) + builderInput('cost',effect.hunger) + '</label>' : '')
+      + (effect.choice ? '<label>' + esc(t('Бонус к','Bonus to')) + builderSelect('social',
+        ['dread','charm'].map(key => [key,statLabel(key)]),settings.social ?? 'dread') + '</label>' : '')
+      + (second ? '<label>' + esc(t('Убавить из','Reduce')) + builderSelect('trade',
+        [first,second].map(key => [key,statLabel(key)]),settings.trade ?? first) + '</label>' : '')
+      + (parentOptions.length > 1 ? '<label>' + esc(t('Базовая черта','Parent trait'))
+        + builderSelect('parent',parentOptions,settings.parent ?? '') + '</label>' : '')
+      + '<button class="filter-chip" type="button" data-remove-build="' + esc(item.id) + '">' + esc(t('Убрать','Remove')) + '</button></div></div>'
+      + (children.length ? '<details data-subtraits="' + esc(item.id) + '"' + (closed.has(item.id) ? '' : ' open') + '><summary>'
+        + esc(t('Подчерты','Subtraits')) + ' · ' + children.length + '</summary><ul>' + children.map(renderSlot).join('') + '</ul></details>' : '')
+      + '</li>';
+  };
+  const slots = Math.max(7,roots.length);
+  selection.innerHTML = '<h3>' + esc(t('Выбранные черты','Selected traits')) + '</h3><ol class="builder-slots" style="--slots:'
+    + slots + '">' + roots.map(renderSlot).join('') + Array.from({length:slots - roots.length}, () =>
+      '<li class="builder-empty-slot"><span>' + esc(t('Свободный слот','Empty slot')) + '</span></li>').join('') + '</ol>';
+  selection.querySelector('.builder-slots').scrollTop = scrollTop;
   $('#builder-selected').onchange = event => {
     const key = event.target.dataset.buildSetting;
     const row = event.target.closest('[data-selected-trait]');
@@ -931,15 +1023,16 @@ function renderBuilder() {
     const value = event.target.value;
     const settings = buildTraits.get(row.dataset.selectedTrait);
     if (key === 'cost' && value === '') delete settings[key];
-    else settings[key] = key === 'count' || key === 'cost' ? Number(value) : value;
+    else if (key === 'count') settings.count = Number.isSafeInteger(Number(value)) && Number(value) >= 1 ? Number(value) : 1;
+    else settings[key] = key === 'cost' ? Number(value) : value;
     renderBuilder();
     [...$('#builder-selected').querySelectorAll('[data-selected-trait]')].find(next => next.dataset.selectedTrait === row.dataset.selectedTrait)
       ?.querySelector('[data-build-setting="' + key + '"]')?.focus({preventScroll:true});
   };
   $('#builder-selected').querySelectorAll('[data-remove-build]').forEach(button => button.onclick = () => {
-    buildTraits.delete(button.dataset.removeBuild);
+    removeBuilderTrait(button.dataset.removeBuild);
     renderBuilder();
-    $('#builder-search').focus();
+    $('#builder-search').focus({preventScroll:true});
   });
   const adjustmentsOpen = $('#builder-adjustments details')?.open;
   $('#builder-adjustments').innerHTML = '<details' + (adjustmentsOpen ? ' open' : '') + '><summary>'
@@ -1190,7 +1283,9 @@ function parseStats(value) {
 function cleanDraft(draft, kind) {
   const fields = Object.fromEntries(localizedFields.map(field => [field,cleanText(draft[field],field === 'text' || field === 'description')]));
   const item = {...fields,stats:parseStats(draft.stats)};
-  return kind === 'spell' ? normalizeSpellFields(item) : item;
+  if (kind === 'spell') return normalizeSpellFields(item);
+  if (kind === 'trait') return normalizeTraitFields(item);
+  return item;
 }
 
 async function saveEditor(event) {

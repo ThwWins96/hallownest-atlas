@@ -101,8 +101,11 @@ function mountMusic() {
   const volume = document.querySelector('#music-volume');
   const status = document.querySelector('#music-status');
   const settings = document.querySelector('.music-control');
+  const collapse = document.querySelector('#music-collapse');
+  const panel = document.querySelector('#music-panel');
   const volumeKey = 'hallownest-music-volume';
   const trackKey = 'hallownest-music-track';
+  const collapsedKey = 'hallownest-music-collapsed';
   let context;
   let buffer;
   let active;
@@ -115,6 +118,7 @@ function mountMusic() {
   if (Object.hasOwn(tracks,savedTrack)) picker.value = savedTrack;
 
   const translate = (ru,en) => document.querySelector('#language-switch').value === 'ru' ? ru : en;
+  panel.hidden = localStorage.getItem(collapsedKey) === 'true';
   const update = () => {
     settings.dataset.playing = String(Boolean(active));
     button.setAttribute('aria-pressed', settings.dataset.playing);
@@ -127,6 +131,11 @@ function mountMusic() {
     volume.setAttribute('aria-label', translate('Громкость музыки','Music volume'));
     volume.title = translate('Громкость музыки','Music volume');
     picker.setAttribute('aria-label', translate('Выбрать композицию','Choose a track'));
+    settings.dataset.collapsed = String(panel.hidden);
+    collapse.setAttribute('aria-expanded', String(!panel.hidden));
+    collapse.title = panel.hidden ? translate('Развернуть плеер','Expand music player')
+      : translate('Свернуть плеер','Minimize music player');
+    collapse.setAttribute('aria-label', collapse.title);
   };
   const level = () => (Number(volume.value) / 100) ** 1.5;
 
@@ -172,6 +181,11 @@ function mountMusic() {
   };
 
   button.onclick = () => active ? pause() : play();
+  collapse.onclick = () => {
+    panel.hidden = !panel.hidden;
+    localStorage.setItem(collapsedKey, String(panel.hidden));
+    update();
+  };
   picker.onchange = () => {
     const wasPlaying = Boolean(active);
     if (wasPlaying) pause();

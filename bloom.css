@@ -88,6 +88,7 @@ body::before {
   bottom: 18%;
   transform: translateX(-50%);
   transform-origin: 50% 86%;
+  object-fit: contain;
   filter: drop-shadow(0 3px 2px #081423a8) drop-shadow(0 0 10px #a1dcff6b);
   opacity: 0;
 }
@@ -207,11 +208,11 @@ body::before {
   right: max(.75rem, env(safe-area-inset-right));
   bottom: max(.75rem, env(safe-area-inset-bottom));
   display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) 34px;
+  grid-template-columns: 44px minmax(0, 1fr) 34px 24px;
   align-items: center;
   column-gap: .65rem;
   row-gap: .18rem;
-  width: min(246px, calc(100vw - 1.5rem));
+  width: min(274px, calc(100vw - 1.5rem));
   padding: .65rem .7rem .48rem;
   border: 1px solid #8dbce66e;
   border-radius: 9px 9px 6px 6px;
@@ -221,6 +222,8 @@ body::before {
   box-shadow: inset 0 0 0 3px #0c172e66, 0 6px 26px #050a15b0;
 }
 .music-control[hidden] { display: none; }
+.music-panel { display: contents; }
+.music-panel[hidden] { display: none; }
 .music-control::before, .music-control::after {
   content: "";
   position: absolute;
@@ -324,8 +327,8 @@ body::before {
 .music-status:empty { display: none; }
 @media (max-width: 520px) {
   .music-control {
-    grid-template-columns: 36px minmax(0,1fr) 32px;
-    width: min(219px, calc(100vw - 1.5rem));
+    grid-template-columns: 36px minmax(0,1fr) 32px 24px;
+    width: min(245px, calc(100vw - 1.5rem));
     gap: .15rem .49rem;
     padding: .52rem .59rem .38rem;
   }
@@ -333,3 +336,23 @@ body::before {
   .music-control button { width: 32px; height: 32px; }
   .music-title { font-size: 1.02rem; }
 }
+#music-collapse {
+  grid-area: 1 / 4 / 3 / 5;
+  width: 24px;
+  height: 24px;
+  align-self: start;
+}
+#music-collapse svg { width: 15px; height: 15px; }
+.music-note, .music-control[data-collapsed="true"] .music-minus { display: none; }
+.music-control[data-collapsed="true"] {
+  display: block;
+  width: auto;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+}
+.music-control[data-collapsed="true"]::before,
+.music-control[data-collapsed="true"]::after { display: none; }
+.music-control[data-collapsed="true"] #music-collapse { width: 44px; height: 44px; }
+.music-control[data-collapsed="true"] .music-note { display: block; width: 20px; height: 20px; }
+.music-control[data-collapsed="true"][data-playing="true"] #music-collapse { box-shadow: 0 0 13px #8cdfff65; }

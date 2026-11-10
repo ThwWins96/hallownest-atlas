@@ -163,19 +163,46 @@ const traitNames = {
   hunger: 'Голод(?:а)?|Hunger', dread: 'Жуть|Жути|Spook', charm: 'Привлекательност[ьи]|Cute'
 };
 
-export function traitHeader(text) {
-  const modifiers = {};
-  const header = String(text ?? '').match(/^\s*(?:[+\-−]\s*\d+(?:[.,]\d+)?\s*[\p{L}]+(?:\s+(?:or|или)\s+[\p{L}]+)?(?:\s*\([^)\n]*\))?[, \t]*)+/iu)?.[0] ?? '';
-  for (const [key, names] of Object.entries(traitNames)) {
-    const pattern = new RegExp('([+\\-−]\\s*\\d+(?:[.,]\\d+)?)\\s*(?:' + names + ')(?!\\p{L})', 'giu');
-    modifiers[key] = [...header.matchAll(pattern)].map(match => Number(match[1].replace('−','-').replace(',','.').replace(/\s/g,'')));
+const traitStatPattern = new RegExp('^([+−-]?[ \\t]*\\d+(?:[.,]\\d+)?)\\s*('
+  + Object.values(traitNames).join('|') + ')(?!\\p{L})(?:[ \\t]+(or|или|and|и)[ \\t]+('
+  + traitNames.dread + '|' + traitNames.charm + ')(?!\\p{L}))?(?:[ \\t]*\\(([^)\\n]*)\\))?', 'iu');
+const traitStatKey = label => Object.keys(traitNames).find(key => new RegExp('^(?:' + traitNames[key] + ')$', 'iu').test(label));
+const numericTraitValue = value => Number(value.trim().replace('−','-').replace(',','.').replace(/\s/g,''));
+
+function traitHeader(text) {
+  const modifiers = {hunger:[], dread:[], charm:[]};
+  let rest = String(text ?? '').trimStart();
+  let choice = false;
+  let qualified = false;
+  for (let match; (match = traitStatPattern.exec(rest));) {
+    const [,amount,label,operator,other,qualifier] = match;
+    const key = traitStatKey(label);
+    const value = numericTraitValue(amount);
+    modifiers[key].push(value);
+    if (/^(or|или)$/iu.test(operator ?? '')) choice = true;
+    else if (other) modifiers[traitStatKey(other)].push(value);
+    qualified ||= Boolean(qualifier);
+    rest = rest.slice(match[0].length).replace(/^[\s,;•]+/u,'');
   }
-  return {modifiers, choice: /(?:Spook|Жуть)\s+(?:or|или)\s+(?:Cute|Привлекательность)|(?:Cute|Привлекательность)\s+(?:or|или)\s+(?:Spook|Жуть)/iu.test(header)};
+  return {modifiers, choice, qualified, rest};
+}
+
+export function normalizeTraitFields(record) {
+  const stats = Object.fromEntries(Object.entries(record.stats ?? {}).map(([key,value]) => [statKey(key),value]));
+  const {modifiers, choice, qualified, rest} = traitHeader(record.text);
+  for (const [key, values] of Object.entries(modifiers)) {
+    if (!String(stats[key] ?? '').trim() && (values.length || key === 'hunger')) {
+      stats[key] = values.length ? values.join(' / ') : '0';
+    }
+  }
+  // Preserve the wording for conditional costs and either/or bonuses.
+  const text = choice || qualified || Object.values(modifiers).some(values => values.length > 1)
+    ? record.text : rest;
+  return {...record, text, stats};
 }
 
 function textFacets(item) {
   const text = String(item.text ?? '');
-  if (item.kind === 'trait') return traitHeader(text).modifiers;
   if (item.kind !== 'art') return {};
   const prefix = text.slice(0, 120);
   const cost = prefix.match(/^\s*(?:Концентрация|Действие Фокусировки|Focus Action)/iu)?.[0]?.trim();
@@ -189,6 +216,7 @@ function textFacets(item) {
 }
 
 export function getFacets(item, locale) {
+  if (item.kind === 'trait') item = normalizeTraitFields(item);
   const found = new Map(Object.entries(textFacets(item)));
   const keys = tracked[item.kind];
   if (!keys) return {};
@@ -197,7 +225,8 @@ export function getFacets(item, locale) {
     const key = statKey(label);
     if (['traits','kind','topic','region','group','__proto__','constructor','prototype'].includes(key)
       || value == null || value === '' || String(value).length > 96) continue;
-    const parts = ['type','range','duration','prerequisite'].includes(key) ? String(value).split(/\s*[/,;•]\s*/) : [String(value)];
+    const parts = ['type','range','duration','prerequisite'].includes(key) ? String(value).split(/\s*[/,;•]\s*/)
+      : item.kind === 'trait' && key === 'hunger' ? String(value).split(/\s*\/\s*/) : [String(value)];
     found.set(key,parts.map(part => item.kind === 'spell' && key === 'range'
       ? part.replace(/^[АБAB]:\s*/iu,'').replace(/\s*\((?:Target|Place Copy|Цель|Место копии)\)$/iu,'') : part).filter(Boolean));
     available.add(key);
@@ -238,19 +267,21 @@ const passive = {
   '044': {speed:-1}, '047': {shell:.5}, '048': {speed:1}, '049': {might:-1}, '102': {speed:-1}
 };
 
+export const devourerCosts = {hearts:4, souls:2, stamina:1};
+
 export function traitEffect(item, size, settings = {}) {
-  const {modifiers, choice} = traitHeader(item.text);
-  for (const [label, value] of Object.entries(item.stats ?? {})) {
-    const key = statKey(label);
-    const amount = String(value).trim().replace(',','.');
-    if (Object.hasOwn(modifiers,key) && amount && Number.isFinite(Number(amount))) modifiers[key] = [Number(amount)];
-  }
+  const {choice} = traitHeader(item.text);
+  const {stats} = normalizeTraitFields(item);
+  const modifiers = Object.fromEntries(Object.keys(traitNames).map(key => [key, String(stats[key] ?? '')
+    .split('/').filter(value => value.trim()).map(numericTraitValue).filter(Number.isFinite)]));
   const number = /^book-trait-(\d{3})$/.exec(item.id)?.[1];
   const costs = modifiers.hunger;
-  const variableCost = number !== '022' && (new Set(costs).size > 1
+  const poolChoice = number === '066';
+  const variableCost = !poolChoice && number !== '022' && (new Set(costs).size > 1
     || /(?:[+\-−]\s*[xх]\s*(?:Голод|Hunger)|(?:Голод|Hunger)\s*:\s*[xх])/iu.test(item.text ?? ''));
   const defaultCost = number === '022' && costs.length >= 3 ? costs[['small','medium','large'].indexOf(size)] : costs[0] ?? 0;
-  const hunger = settings.cost ?? defaultCost;
+  const pool = Object.hasOwn(devourerCosts,settings.pool) ? settings.pool : 'hearts';
+  const hunger = poolChoice ? devourerCosts[pool] : settings.cost ?? defaultCost;
   const base = {...passive[number]};
   for (const key of ['dread','charm']) base[key] = modifiers[key][0] ?? 0;
   if (choice) {
@@ -262,12 +293,12 @@ export function traitEffect(item, size, settings = {}) {
     '028':['accuracy','might','shell'], '030':['shell','grace','speed'],
     '032':['might','grace'], '043':['accuracy'], '045':['grace','might']
   }[number];
-  return {hunger, base, exchange, choice, variableCost};
+  return {hunger, base, exchange, choice, variableCost, poolChoice};
 }
 
 export function buildTotals(items, size, adjustments = {}) {
   const stats = {...templates[size]};
-  const effects = items.map(({item, settings}) => ({...traitEffect(item, size, settings), settings}));
+  const effects = items.map(({item, settings, count = 1}) => ({...traitEffect(item, size, settings), settings, count}));
   let points = 0;
   for (const {exchange, settings} of effects) {
     if (!exchange) continue;
@@ -277,9 +308,9 @@ export function buildTotals(items, size, adjustments = {}) {
     const lowered = settings.trade === second && second ? second : first;
     if (lowered) stats[lowered] -= increase;
   }
-  for (const {hunger, base} of effects) {
-    points += hunger;
-    for (const [key, value] of Object.entries(base)) stats[key] += value;
+  for (const {hunger, base, count} of effects) {
+    points += hunger * count;
+    for (const [key, value] of Object.entries(base)) stats[key] += value * count;
   }
   points += adjustments.hunger || 0;
   stats.hunger += points;

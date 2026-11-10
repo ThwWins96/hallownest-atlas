@@ -11,8 +11,8 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./bloom.css?v=18">
-  <link rel="stylesheet" href="./catalog.css?v=11">
+  <link rel="stylesheet" href="./bloom.css?v=19">
+  <link rel="stylesheet" href="./catalog.css?v=12">
 </head>
 <body>
   <div class="bloom-drift" aria-hidden="true"></div>
@@ -129,6 +129,11 @@
   <div id="reference-tip" role="tooltip" class="reference-tip hidden"></div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
   <aside class="music-control" aria-label="Atlas soundtrack" hidden>
+    <button type="button" id="music-collapse" aria-controls="music-panel" aria-expanded="true" aria-label="Minimize music player">
+      <svg class="music-minus" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 11h14v2H5z"/></svg>
+      <svg class="music-note" viewBox="0 0 24 24" aria-hidden="true"><path d="M10 5v11.3a3.7 3.7 0 1 0 2 3.2V9l6-1.4V4z"/></svg>
+    </button>
+    <div id="music-panel" class="music-panel">
     <svg class="music-medallion" viewBox="0 0 56 56" fill="none" aria-hidden="true">
       <circle cx="28" cy="28" r="25" fill="#10233e" stroke="#7199bc" stroke-opacity=".6"/>
       <circle cx="28" cy="28" r="21" stroke="#9bdaf0" stroke-opacity=".33" stroke-dasharray="2 3"/>
@@ -151,9 +156,10 @@
       <span class="music-meter" aria-hidden="true"><i></i><i></i><i></i></span>
     </div>
     <span class="music-status" id="music-status" role="status"></span>
+    </div>
   </aside>
-  <script src="./app.js?v=20" type="module"></script>
-  <script src="./music.js?v=18" type="module"></script>
+  <script src="./app.js?v=21" type="module"></script>
+  <script src="./music.js?v=19" type="module"></script>
 </body>
 </html>
 
