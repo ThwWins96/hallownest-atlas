@@ -1016,15 +1016,26 @@ function renderBuilder() {
     + slots + '">' + roots.map(renderSlot).join('') + Array.from({length:slots - roots.length}, () =>
       '<li class="builder-empty-slot"><span>' + esc(t('Свободный слот','Empty slot')) + '</span></li>').join('') + '</ol>';
   selection.querySelector('.builder-slots').scrollTop = scrollTop;
+  selection.oninput = event => {
+    const input = event.target;
+    if (input.type !== 'number' || input.dataset.buildSetting !== 'count') return;
+    const count = input.valueAsNumber;
+    if (!Number.isSafeInteger(count) || count < 1) return;
+    buildTraits.get(input.closest('[data-selected-trait]').dataset.selectedTrait).count = count;
+    renderBuilderSummary(selected);
+  };
   $('#builder-selected').onchange = event => {
     const key = event.target.dataset.buildSetting;
     const row = event.target.closest('[data-selected-trait]');
     if (!key || !row) return;
     const value = event.target.value;
     const settings = buildTraits.get(row.dataset.selectedTrait);
+    if (key === 'count' && event.target.type === 'number') {
+      event.target.value = settings.count ?? 1;
+      return;
+    }
     if (key === 'cost' && value === '') delete settings[key];
-    else if (key === 'count') settings.count = Number.isSafeInteger(Number(value)) && Number(value) >= 1 ? Number(value) : 1;
-    else settings[key] = key === 'cost' ? Number(value) : value;
+    else settings[key] = key === 'count' || key === 'cost' ? Number(value) : value;
     renderBuilder();
     [...$('#builder-selected').querySelectorAll('[data-selected-trait]')].find(next => next.dataset.selectedTrait === row.dataset.selectedTrait)
       ?.querySelector('[data-build-setting="' + key + '"]')?.focus({preventScroll:true});
