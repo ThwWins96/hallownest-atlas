@@ -623,11 +623,13 @@ function resolveReference(name, current, kind) {
   return preferred.length === 1 ? preferred[0] : null;
 }
 
-function referenceLink(name, target) {
+function referenceLink(name, target, linked) {
+  if (!target || linked.has(target.id)) return esc(name);
+  linked.add(target.id);
   return '<a class="atlas-ref" data-ref="' + esc(target.id) + '" href="' + recordHref(target.id) + '">' + esc(name) + '</a>';
 }
 
-function linkText(text, item, kind) {
+function linkText(text, item, linked, kind) {
   const pattern = referenceIndex.pattern;
   if (!pattern) return esc(text);
   let offset = 0;
@@ -636,30 +638,30 @@ function linkText(text, item, kind) {
     html += esc(text.slice(offset, match.index));
     const name = match[0];
     const target = resolveReference(name, item.id, kind);
-    html += target ? referenceLink(name, target) : esc(name);
+    html += referenceLink(name, target, linked);
     offset = match.index + name.length;
   }
   return html + esc(text.slice(offset));
 }
 
-function formattedText(text, item) {
+function formattedText(text, item, linked) {
   const tokens = /\[\[([^\]\n]+)\]\]|\*\*([^*\n]+)\*\*|==([^=\n]+)==/g;
   let html = '';
   let offset = 0;
   for (const match of text.matchAll(tokens)) {
-    html += linkText(text.slice(offset, match.index), item);
+    html += linkText(text.slice(offset, match.index), item, linked);
     const [, reference, strong, highlight] = match;
     if (reference) {
       const [name, alias = name] = reference.split('|', 2).map(value => value.trim());
       const target = resolveReference(name, item.id);
-      html += target ? referenceLink(alias, target) : esc(alias);
+      html += referenceLink(alias, target, linked);
     } else {
       const tag = strong ? 'strong' : 'mark';
-      html += '<' + tag + '>' + linkText(strong ?? highlight, item) + '</' + tag + '>';
+      html += '<' + tag + '>' + linkText(strong ?? highlight, item, linked) + '</' + tag + '>';
     }
     offset = match.index + match[0].length;
   }
-  return html + linkText(text.slice(offset), item);
+  return html + linkText(text.slice(offset), item, linked);
 }
 
 function selectRecord(id, keyboard = false) {
@@ -703,9 +705,11 @@ function renderDetail(id) {
   }
   const stats = statPairsWithFacets(item).map(([key, value]) =>
     '<div class="detail-stat"><small>' + esc(key) + '</small><b>' + esc(value) + '</b></div>').join('');
+  const linked = new Set();
+  const description = formattedText(item.description, item, linked);
   const tags = splitTraits(item).map(name => {
     const target = resolveReference(name, id, 'trait');
-    return '<span class="trait-tag">' + (target ? referenceLink(name, target) : linkText(name, item, 'trait')) + '</span>';
+    return '<span class="trait-tag">' + (target ? referenceLink(name, target, linked) : linkText(name, item, linked, 'trait')) + '</span>';
   }).join('');
   const region = item.topic ? topicLabel(item.topic) : catalogGroup(item, 'region') || t('Халлоунест');
   const group = catalogGroup(item, 'group');
@@ -716,11 +720,11 @@ function renderDetail(id) {
     + (gmUnlocked ? '<button type="button" class="text-button" data-detail-edit>' + esc(t('Редактировать ✎')) + '</button>' : '')
     + '</div></div><div class="detail-region">' + esc(region + (group && group !== region ? ' · ' + group : ''))
     + '</div><h3 class="detail-title" id="detail-title" tabindex="-1">' + esc(item.name) + '</h3>'
-    + (item.description ? '<p class="detail-description">' + formattedText(item.description, item) + '</p>' : '')
+    + (item.description ? '<p class="detail-description">' + description + '</p>' : '')
     + (stats ? '<div class="detail-stats">' + stats + '</div>' : '')
     + (tags ? '<div class="detail-traits"><div class="detail-label">' + esc(t('Черты'))
       + '</div><div class="trait-tags">' + tags + '</div></div>' : '')
-    + (item.text ? '<div class="detail-body"><p>' + formattedText(item.text, item) + '</p></div>' : '')
+    + (item.text ? '<div class="detail-body"><p>' + formattedText(item.text, item, linked) + '</p></div>' : '')
     + '<div class="detail-source">' + esc(t('Источник')) + ': ' + esc(item.source || t('добавлено Хранителем архива')) + '</div>'
     + (gmUnlocked ? '<div class="detail-actions"><button type="button" data-detail-delete>'
       + esc(t('Удалить')) + '</button></div>' : '') + '</div>';
