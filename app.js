@@ -241,9 +241,15 @@ async function boot() {
     return response.json();
   });
   const books = ['trait', 'path', 'proficiency', 'art', 'spell'].map(kind => 'book-' + kind);
-  const backups = Promise.all(['intelligent', 'wild', 'reference', ...books].map(loadData))
-    .then(([intelligent, wild, reference, ...compendium]) => {
-      defaults = [...intelligent, ...wild, ...reference.equipment, ...compendium.flat()];
+  const bestiaryRepairs = loadData('bestiary-repairs').catch(() => ({repaired:{}, additions:{}}));
+  const backups = Promise.all([loadData('intelligent'), loadData('wild'), loadData('reference'),
+    bestiaryRepairs, ...books.map(loadData)])
+    .then(([intelligent, wild, reference, {repaired,additions}, ...compendium]) => {
+      const repairedWild = wild.flatMap(record => [
+        {...record,...repaired[record.id]},
+        ...(additions[record.id] ?? [])
+      ]);
+      defaults = [...intelligent, ...repairedWild, ...reference.equipment, ...compendium.flat()];
       originals = new Map(defaults.map(record => [record.id, record]));
       if (archiveRevision === null) db = defaults;
     });
@@ -349,7 +355,7 @@ function localizeRecord(record, locale = language) {
       let candidate = personalValue ?? stock ?? value;
       if (numericStats.has(key)) {
         candidate = englishStatValue(key,value);
-        if (/\p{Script=Cyrillic}/u.test(candidate) && stock !== undefined) candidate = stock;
+        if (/\p{Script=Cyrillic}/u.test(candidate) && unchanged) candidate = personalValue ?? stock ?? candidate;
       }
       pairs.push([key,cleanText(englishStatValue(key,candidate))]);
     }
