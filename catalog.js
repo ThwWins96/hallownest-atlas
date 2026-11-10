@@ -10,7 +10,7 @@ export const facetFields = {
   cost: ['Стоимость', 'Cost', 'activation'],
   stamina: ['Выносливость', 'Stamina'],
   souls: ['Души', 'Soul', 'soul cost', 'душа'],
-  heavy: ['Вес', 'Weight', 'heavy'],
+  heavy: ['Вес', 'Bulk', 'weight'],
   quality: ['Качество', 'Quality', 'rarity', 'редкость'],
   geo: ['Гео', 'Geo'],
   hunger: ['Голод', 'Hunger'],
@@ -28,12 +28,13 @@ const aliases = new Map(Object.entries(facetFields).flatMap(([key, values]) =>
 export const statKey = key => aliases.get(keyText(key)) ?? key;
 
 const values = {
-  type: [['Гвоздь', 'Nail'], ['Игла', 'Needle'], ['Клык', 'Fang'], ['Крюк', 'Hook'],
+  type: [['Гвоздь', 'Nail'], ['Игла', 'Needle'], ['Клык', 'Tusk', 'Fang'], ['Крюк', 'Hook'],
     ['Праща', 'Sling'], ['Щит', 'Shield']],
   range: [['Касание', 'Touch'], ['Близко', 'Close'], ['Далеко', 'Far'], ['На себя', 'Self'],
-    ['Ближний', 'Melee'], ['Дальний', 'Ranged'], ['Досяг.', 'Reach']],
+    ['Ближний', 'Melee'], ['Дальний', 'Range', 'Ranged'], ['Досяг.', 'Reach']],
   duration: [['Краткая', 'Brief', 'краткость'], ['Особая', 'Special'], ['Сцена', 'Scene'],
     ['Концентрация', 'Concentration'], ['Жизнь', 'Lifetime'], ['Вечность', 'Eternal'], ['1 Отдых', '1 Rest']],
+  grip: [['1Р', '1H'], ['2Р', '2H'], ['2Р+', '2H+']],
   cost: [['Концентрация', 'Focus Action']],
   heavy: [['Лёгкое', 'Light']],
   quality: [['Обычный', 'Common'], ['Необычный', 'Uncommon'], ['Редкий', 'Rare'], ['Уникальный', 'Unique']]
@@ -42,6 +43,29 @@ const values = {
 const normalizeValue = value => keyText(value).replace(/\s*\(\d+\)$/, '');
 const valueAlias = (key, value) => Object.hasOwn(values,key) ? values[key].find(terms => terms.some(term => normalizeValue(term) === normalizeValue(value))) : undefined;
 export const displayValue = (key, value, locale) => valueAlias(key, value)?.[locale === 'en' ? 1 : 0] ?? value;
+
+const statAnnotations = {
+  stamina: [[/Скорость/gi, 'Speed']],
+  hunger: [[/Сытость/gi, 'Belly'], [/Мшистокрыл/gi, 'Mossfly'], [/до (?=\d)/gi, 'up to ']],
+  shell: [[/Поглощение/gi, 'Absorption'], [/Впитывание невозможно/gi, 'cannot Soak']],
+  might: [[/Нагрузка/gi, 'Load']],
+  hearts: [[/Сердца Живокрови/gi, 'Lifeblood Hearts']]
+};
+
+export function englishStatValue(key, value) {
+  const text = String(value ?? '').replace(/Гео/gi, 'Geo');
+  if (Object.hasOwn(values,key)) {
+    return text.split(/([/,;])/).map((part,index) => {
+      if (index % 2) return part;
+      const term = part.trim();
+      const qualifier = term.match(/\s*\(\d+\)$/)?.[0] ?? '';
+      const translation = valueAlias(key,term);
+      return translation ? part.replace(term,translation[1] + (qualifier ? ' ' + qualifier.trim() : '')) : part;
+    }).join('');
+  }
+  const replacements = Object.hasOwn(statAnnotations,key) ? statAnnotations[key] : [];
+  return replacements.reduce((result,[pattern,english]) => result.replace(pattern,english),text);
+}
 
 const tracked = {
   equipment: ['type', 'range', 'damage', 'grip', 'price', 'heavy', 'quality', 'geo'],

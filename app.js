@@ -1,6 +1,6 @@
 import {readArchive, writeArchive} from './archive-api.js';
 import {language, setLanguage, t, cleanText} from './locale.js?v=10';
-import {facetFields, getFacets, keyText, statKey, topicOf, templates, traitEffect, buildTotals, makeReferenceIndex} from './catalog.js?v=10';
+import {facetFields, getFacets, keyText, statKey, englishStatValue, topicOf, templates, traitEffect, buildTotals, makeReferenceIndex} from './catalog.js?v=12';
 
 const KIND_LABEL = {
   разумные:'Разумный жук', дикие:'Дикое существо', equipment:'Экипировка', state:'Состояние',
@@ -312,6 +312,10 @@ async function saveArchive(next, expected = archiveRevision) {
 const localizedFields = ['name', 'region', 'group', 'description', 'text', 'source'];
 const numericStats = new Set(['might', 'accuracy', 'shell', 'grace', 'hearts', 'souls', 'stamina', 'dread', 'charm', 'hunger']);
 
+function normalizeStats(stats) {
+  return Object.fromEntries(Object.entries(stats ?? {}).map(([key,value]) => [statKey(key),value]));
+}
+
 function localizeRecord(record, locale = language) {
   const initial = originals.get(record.id);
   const translation = english[record.id];
@@ -328,17 +332,30 @@ function localizeRecord(record, locale = language) {
   if (!result.name && translation?.repairName) result.name = translation.repairName;
   if (!result.name && record.id === 'дикие-26' && !result.text) return null;
   if (!result.name) result.name = locale === 'en' ? 'Untitled entry' : 'Запись без названия';
-  const stats = record.stats ?? {};
-  result.stats = {};
-  for (const key of new Set([...Object.keys(stats), ...Object.keys(personal?.stats ?? {})])) {
-    const value = stats[key];
-    if (effectiveLocale === 'ru' && value === undefined) continue;
-    const translated = value === initial?.stats?.[key] && !numericStats.has(key)
-      ? translation?.stats?.[key] : undefined;
-    const candidate = effectiveLocale === 'en' && !numericStats.has(key)
-      ? personal?.stats?.[key] ?? translated ?? String(value ?? '').replace(/Гео/g, 'Geo')
-      : value;
-    if (candidate !== undefined) result.stats[key] = cleanText(candidate);
+  const stats = normalizeStats(record.stats);
+  if (effectiveLocale === 'en') {
+    const personalStats = normalizeStats(personal?.stats);
+    const originalStats = normalizeStats(initial?.stats);
+    const translatedStats = normalizeStats(translation?.stats);
+    const pairs = [];
+    for (const key of new Set([...Object.keys(stats), ...Object.keys(personalStats)])) {
+      const value = stats[key];
+      const unchanged = value !== undefined && value === originalStats[key];
+      const personalValue = Object.hasOwn(personalStats,key) ? personalStats[key] : undefined;
+      const stock = unchanged ? translatedStats[key] : undefined;
+      if (unchanged && personalValue === undefined && (
+        (key === 'size' && /^Клешни:/iu.test(value)) ||
+        (key === 'hearts' && /^\.\s*Этот урон нельзя уменьшить\.$/iu.test(value)))) continue;
+      let candidate = personalValue ?? stock ?? value;
+      if (numericStats.has(key)) {
+        candidate = englishStatValue(key,value);
+        if (/\p{Script=Cyrillic}/u.test(candidate) && stock !== undefined) candidate = stock;
+      }
+      pairs.push([key,cleanText(englishStatValue(key,candidate))]);
+    }
+    result.stats = Object.fromEntries(pairs);
+  } else {
+    result.stats = Object.fromEntries(Object.entries(stats).map(([key,value]) => [key,cleanText(value)]));
   }
   result.topic = topicOf(record) || topicOf(result);
   if (result.topic) result.kind = 'rule';
