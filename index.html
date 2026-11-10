@@ -11,6 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
   <link rel="stylesheet" href="./bloom.css?v=9">
+  <link rel="stylesheet" href="./catalog.css?v=10">
 </head>
 <body>
   <div class="bloom-drift" aria-hidden="true"></div>
@@ -49,13 +50,6 @@
       </section>
 
       <div class="workspace hidden" id="workspace">
-        <aside class="sidebar">
-          <div class="side-section-label">УКАЗАТЕЛЬ</div>
-          <div class="side-nav" id="side-nav"></div>
-          <div class="sidebar-rule"></div>
-          <div class="side-note"><span class="note-ornament">✳</span><p>«В темноте всякий путь начинается с имени»</p><small>— запись на полях</small></div>
-          <div class="source-note">ИСТОЧНИКИ<br><span>Правила HKRPG v1.7<br>Журнал Скальда<br>Записки Дуэлянта</span></div>
-        </aside>
 
         <section class="catalog">
           <div class="catalog-head">
@@ -65,7 +59,8 @@
               <button class="icon-button" id="export-button" title="Скачать резервную копию" aria-label="Скачать резервную копию">↓</button>
             </div>
           </div>
-          <div class="filter-row" id="filters"></div>
+          <div class="catalog-actions" id="catalog-actions"></div>
+          <div class="catalog-filters" id="filters"></div>
           <div class="gm-tools hidden" id="gm-tools">
             <div><b>Редактор ГМа</b><span>Сохранённые изменения видны всем игрокам</span></div>
             <div class="gm-tool-actions"><label class="import-button"><span id="import-label">Импорт базы</span><input type="file" id="import-file" accept="application/json,.json" hidden></label><button class="text-button" id="reset-button">Сбросить к исходным</button><button class="add-button" id="add-button">＋ Новая запись</button></div>
@@ -88,20 +83,50 @@
 
   <dialog id="login-dialog" class="dialog compact"><form method="dialog" id="login-form"><button type="button" class="dialog-close" aria-label="Закрыть">×</button><div class="dialog-crest">⌘</div><div class="eyebrow small centered">ТОЛЬКО ДЛЯ ХРАНИТЕЛЯ</div><h2>Ключ от архива</h2><p>Введи пароль ГМа, чтобы изменить записи атласа.</p><label class="field-label" for="gm-password">ПАРОЛЬ ГМа</label><input id="gm-password" class="form-input" type="password" maxlength="160" autocomplete="current-password" placeholder="••••" required><div id="login-error" class="form-error hidden" role="alert"></div><button class="primary-button" type="submit">Открыть архив <span>→</span></button></form></dialog>
 
-  <dialog id="edit-dialog" class="dialog editor-dialog"><form id="edit-form"><button type="button" class="dialog-close" data-close aria-label="Закрыть">×</button><div class="eyebrow small"><span class="eyebrow-line"></span><span>РАБОЧАЯ ТЕТРАДЬ ГМа</span></div><h2 id="edit-title">Новая запись</h2><input type="hidden" id="edit-id"><div class="form-grid">
-    <label class="field-label">НАЗВАНИЕ<input class="form-input" id="edit-name" required></label>
+  <dialog id="edit-dialog" class="dialog editor-dialog"><form id="edit-form"><button type="button" class="dialog-close" data-close aria-label="Закрыть">×</button><div class="eyebrow small"><span class="eyebrow-line"></span><span>РАБОЧАЯ ТЕТРАДЬ ГМа</span></div><h2 id="edit-title">Новая запись</h2>
+    <div class="edit-languages">
+      <label id="edit-locale-label" for="edit-locale">Language</label>
+      <select class="form-input" id="edit-locale"><option value="en">English</option><option value="ru">Русский</option></select>
+      <small id="edit-locale-note"></small>
+    </div>
+    <input type="hidden" id="edit-id"><div class="form-grid">
+    <label class="field-label">НАЗВАНИЕ<input class="form-input" id="edit-name"></label>
     <label class="field-label">РАЗДЕЛ<select class="form-input" id="edit-kind"><option value="разумные">Разумные жуки</option><option value="дикие">Дикие существа</option><option value="equipment">Экипировка</option><option value="state">Состояния</option><option value="rule">Памятка правил</option></select></label>
+    <label class="field-label hidden" id="edit-rule-topic-label">ТЕМА ПРАВИЛ<select class="form-input" id="edit-rule-topic"></select></label>
     <label class="field-label">МЕСТО / КАТЕГОРИЯ<input class="form-input" id="edit-region" placeholder="например, Забытое Перепутье"></label>
     <label class="field-label">ГРУППА<input class="form-input" id="edit-group" placeholder="необязательно"></label>
     <label class="field-label wide">КРАТКОЕ ОПИСАНИЕ<input class="form-input" id="edit-description"></label>
     <label class="field-label wide">ХАРАКТЕРИСТИКИ <small>одна строка на показатель: Размер: Средний</small><textarea class="form-input stats-input" id="edit-stats" rows="5" spellcheck="false"></textarea></label>
-    <label class="field-label wide">ЧЕРТЫ, СПОСОБНОСТИ И ПОЛНЫЙ ТЕКСТ<textarea class="form-input" id="edit-text" rows="10"></textarea></label>
+    <div class="wide">
+      <label class="field-label" for="edit-text">ЧЕРТЫ, СПОСОБНОСТИ И ПОЛНЫЙ ТЕКСТ</label>
+      <div class="format-tools">
+        <button type="button" class="filter-chip" data-format="**"></button>
+        <button type="button" class="filter-chip" data-format="=="></button>
+        <button type="button" class="filter-chip" data-format="link"></button>
+      </div>
+      <textarea class="form-input" id="edit-text" rows="10"></textarea>
+    </div>
     <label class="field-label wide">ИСТОЧНИК / ПРИМЕЧАНИЕ<input class="form-input" id="edit-source"></label>
   </div><div class="dialog-actions"><button type="button" class="delete-button hidden" id="delete-button">Удалить запись</button><button type="button" class="secondary-button" data-close>Отмена</button><button type="submit" class="primary-button">Сохранить запись <span>→</span></button></div></form></dialog>
+  <dialog id="reading-dialog" class="dialog reading-dialog" aria-labelledby="detail-title">
+    <div class="reading-header"><button type="button" class="filter-chip" id="close-reading"></button></div>
+    <div id="reading-content"></div>
+  </dialog>
+  <dialog id="builder-dialog" class="dialog builder-dialog" aria-labelledby="builder-title">
+    <button type="button" class="dialog-close" id="close-builder" aria-label="Close">×</button>
+    <h2 id="builder-title"></h2>
+    <div id="builder-options"></div>
+    <div id="builder-summary"></div>
+    <div id="builder-selected"></div>
+    <div id="builder-adjustments"></div>
+    <label for="builder-search" id="builder-search-label"></label>
+    <input type="search" id="builder-search" class="form-input" autocomplete="off">
+    <div id="builder-list"></div>
+  </dialog>
+  <div id="reference-tip" role="tooltip" class="reference-tip hidden"></div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="./app.js?v=8" type="module"></script>
+  <script src="./app.js?v=10" type="module"></script>
 </body>
 </html>
-
 
 

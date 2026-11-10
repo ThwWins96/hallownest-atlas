@@ -56,7 +56,7 @@ export function t(russian, english = strings[russian]) {
   return language === 'en' ? english ?? russian : russian;
 }
 
-export function cleanText(value) {
+export function cleanText(value, keepInline = false) {
   return String(value ?? '')
     .replace(/\\([#*_!\[\]()=.|-])/g, '$1')
     .replace(/!\[[^\]\n]*\](?:\[[^\]\n]*\]|\([^\n]*?\))/g, '')
@@ -67,7 +67,7 @@ export function cleanText(value) {
     .replace(/^[ \t]*#{1,6}(?:[ \t]+|$)/gm, '')
     .replace(/^[ \t]*(?:[-—–_*]\s*){3,}$/gm, '')
     .replace(/^[ \t]*[*+-][ \t]+/gm, '• ')
-    .replace(/(\*\*|__)(.*?)\1/g, '$2')
+    .replace(/(\*\*|__)(.*?)\1/g, (match, marker, text) => keepInline && marker === '**' ? match : text)
     .replace(/(^|[\s(])([*_])([^*_\n]+)\2(?=$|[\s).,;:!?])/gm, '$1$3')
     .replace(/^\s*[*“"«]*(?:Цитата из бестиария|Bestiary quote|Notebook quote)[*”"»]*\s*$/gim, '')
     .replace(/\n[ \t]+\n/g, '\n\n')
