@@ -82,11 +82,14 @@ function mountMusic() {
 
   const translate = (ru,en) => document.querySelector('#language-switch').value === 'ru' ? ru : en;
   const update = () => {
-    button.setAttribute('aria-pressed', String(Boolean(active)));
+    settings.dataset.playing = String(Boolean(active));
+    button.setAttribute('aria-pressed', settings.dataset.playing);
     button.title = active ? translate('Поставить музыку на паузу','Pause music')
       : translate('Включить музыку','Play music');
-    button.querySelector('.music-icon').textContent = active ? 'Ⅱ' : '♪';
-    button.querySelector('.music-label').textContent = translate('Музыка','Music');
+    button.setAttribute('aria-label', button.title);
+    const label = translate('Музыка Атласа','Atlas soundtrack');
+    settings.setAttribute('aria-label', label);
+    settings.querySelector('.music-kicker').textContent = label;
     volume.setAttribute('aria-label', translate('Громкость музыки','Music volume'));
     volume.title = translate('Громкость музыки','Music volume');
   };

@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./bloom.css?v=16">
+  <link rel="stylesheet" href="./bloom.css?v=17">
   <link rel="stylesheet" href="./catalog.css?v=11">
 </head>
 <body>
@@ -127,13 +127,32 @@
   </dialog>
   <div id="reference-tip" role="tooltip" class="reference-tip hidden"></div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <div class="music-control" hidden>
-    <button type="button" id="music-toggle" aria-pressed="false"><span class="music-icon" aria-hidden="true">♪</span><span class="music-label">Music</span></button>
-    <input id="music-volume" type="range" min="0" max="100" value="30" aria-label="Music volume">
+  <aside class="music-control" aria-label="Atlas soundtrack" hidden>
+    <svg class="music-medallion" viewBox="0 0 56 56" fill="none" aria-hidden="true">
+      <circle cx="28" cy="28" r="25" fill="#10233e" stroke="#7199bc" stroke-opacity=".6"/>
+      <circle cx="28" cy="28" r="21" stroke="#9bdaf0" stroke-opacity=".33" stroke-dasharray="2 3"/>
+      <path d="M10 37c5-3 8-3 12 0 4 2 8 2 12 0 4-3 7-3 12 0M13 42c4-2 7-2 11 0 3 2 5 2 8 0 4-2 7-2 11 0" stroke="#6bb2d6" stroke-opacity=".48" stroke-linecap="round"/>
+      <path d="M25 18c0-2 1.3-3 3-3s3 1 3 3M28 13v-2m-7 9h14l-2 11-5 4-5-4-2-11Z" stroke="#c1ecf8" stroke-width="1.4" stroke-linejoin="round" stroke-linecap="round"/>
+      <path d="M28 22c1 1.3 2 2.4 2 4a2 2 0 1 1-4 0c0-1.6 1-2.7 2-4Z" fill="#c8f7ff"/>
+      <path d="m16 20 1-2 1 2-1 2-1-2Zm22-3 1-2 1 2-1 2-1-2Z" fill="#9bdaf0" fill-opacity=".73"/>
+    </svg>
+    <div class="music-copy">
+      <span class="music-kicker">Atlas soundtrack</span>
+      <span class="music-title" lang="en">Lanterns Below</span>
+    </div>
+    <button type="button" id="music-toggle" aria-pressed="false" aria-label="Play music">
+      <svg class="music-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5.5v13l10-6.5z"/></svg>
+      <svg class="music-pause" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5h3v14H8zm6 0h3v14h-3z"/></svg>
+    </button>
+    <div class="music-level">
+      <svg viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="M3 8h3l4-3v10l-4-3H3zm10-.5a3.5 3.5 0 0 1 0 5m2-7a6.4 6.4 0 0 1 0 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <input id="music-volume" type="range" min="0" max="100" value="30" aria-label="Music volume">
+      <span class="music-meter" aria-hidden="true"><i></i><i></i><i></i></span>
+    </div>
     <span class="music-status" id="music-status" role="status"></span>
-  </div>
+  </aside>
   <script src="./app.js?v=15" type="module"></script>
-  <script src="./music.js?v=16" type="module"></script>
+  <script src="./music.js?v=17" type="module"></script>
 </body>
 </html>
 
