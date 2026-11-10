@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./bloom.css?v=9">
+  <link rel="stylesheet" href="./bloom.css?v=16">
   <link rel="stylesheet" href="./catalog.css?v=11">
 </head>
 <body>
@@ -127,7 +127,13 @@
   </dialog>
   <div id="reference-tip" role="tooltip" class="reference-tip hidden"></div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
+  <div class="music-control" hidden>
+    <button type="button" id="music-toggle" aria-pressed="false"><span class="music-icon" aria-hidden="true">♪</span><span class="music-label">Music</span></button>
+    <input id="music-volume" type="range" min="0" max="100" value="30" aria-label="Music volume">
+    <span class="music-status" id="music-status" role="status"></span>
+  </div>
   <script src="./app.js?v=15" type="module"></script>
+  <script src="./music.js?v=16" type="module"></script>
 </body>
 </html>
 

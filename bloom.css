@@ -201,3 +201,44 @@ body::before {
 
 
 
+.music-control {
+  position: fixed;
+  z-index: 3;
+  right: max(.65rem, env(safe-area-inset-right));
+  bottom: max(.65rem, env(safe-area-inset-bottom));
+  display: flex;
+  align-items: center;
+  gap: .6rem;
+  padding: .24rem .65rem .24rem .24rem;
+  border: 1px solid var(--line2);
+  border-radius: 5px;
+  color: var(--paper);
+  background: #101d32f2;
+  box-shadow: 0 5px 20px #050a15a8;
+}
+.music-control[hidden] { display: none; }
+.music-control button {
+  display: flex;
+  align-items: center;
+  gap: .4rem;
+  min-height: 32px;
+  padding: 0 .53rem;
+  background: #1b2f4c;
+  border: 1px solid var(--line2);
+  border-radius: 3px;
+  cursor: pointer;
+}
+.music-control button[aria-pressed="true"] { color: var(--teal); border-color: var(--teal2); }
+.music-icon { width: 1em; font-size: 1.05rem; }
+.music-control input { width: 62px; accent-color: var(--teal2); cursor: pointer; }
+.music-control button:focus-visible, .music-control input:focus-visible { outline: 2px solid var(--teal2); outline-offset: 2px; }
+.music-status {
+  position: absolute;
+  right: 0;
+  bottom: calc(100% + .4rem);
+  min-width: max-content;
+  padding: .35rem .55rem;
+  border-radius: 3px;
+  background: var(--ink2);
+}
+.music-status:empty { display: none; }
