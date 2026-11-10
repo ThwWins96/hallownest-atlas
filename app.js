@@ -1020,12 +1020,6 @@ function formatSelection(format) {
 async function translateDraft() {
   const notice = $('#translation-status');
   const button = $('#translate-draft');
-  const translatorAPI = globalThis.Translator;
-  if (!translatorAPI) {
-    notice.textContent = t('Автоперевод доступен в поддерживаемых настольных браузерах. Вторую версию можно заполнить вручную.',
-      'Automatic translation requires a supported desktop browser. You can enter the other version manually.');
-    return;
-  }
   const drafts = editDrafts;
   const sourceLanguage = editLanguage;
   const targetLanguage = sourceLanguage === 'ru' ? 'en' : 'ru';
@@ -1036,15 +1030,23 @@ async function translateDraft() {
     notice.textContent = t('Сначала заполни название исходной записи.','Enter the source title first.');
     return;
   }
-  const options = {sourceLanguage,targetLanguage};
-  const current = () => $('#edit-dialog').open && drafts === editDrafts;
+  const dialog = $('#edit-dialog');
+  const current = () => dialog.open && drafts === editDrafts;
+  const abort = new AbortController();
+  const cancel = () => abort.abort();
+  dialog.addEventListener('close',cancel,{once:true});
+  const timeout = setTimeout(cancel,120000);
   let translator;
   button.disabled = true;
   notice.textContent = t('Готовим перевод…','Preparing translation…');
   try {
-    if (await translatorAPI.availability(options) === 'unavailable') throw new Error('Unavailable');
-    translator = await translatorAPI.create(options);
+    const {createDraftTranslator} = await import('./draft-translator.js?v=13');
+    translator = await createDraftTranslator({sourceLanguage,targetLanguage,signal:abort.signal}, () => {
+      if (current()) notice.textContent = t('Загружаем локальную модель (~32 МБ при первом запуске)…',
+        'Loading the local model (~32 MB on first use)…');
+    });
     if (!current()) return;
+    notice.textContent = t('Переводим черновик…','Translating draft…');
     const translated = {};
     for (const field of localizedFields) {
       if (target[field].trim() || !source[field].trim()) continue;
@@ -1064,9 +1066,11 @@ async function translateDraft() {
     notice.textContent = t('Проверь черновик перед сохранением. Характеристики можно заполнить вручную.',
       'Review the draft before saving. Enter the localized stat values manually.');
   } catch {
-    if (current()) notice.textContent = t('Автоперевод недоступен. Вторую версию можно заполнить вручную.',
-      'Automatic translation is unavailable. You can enter the other version manually.');
+    if (current()) notice.textContent = t('Модель перевода не запустилась. Проверь соединение и попробуй ещё раз.',
+      'The translation model could not start. Check your connection and try again.');
   } finally {
+    clearTimeout(timeout);
+    dialog.removeEventListener('close',cancel);
     translator?.destroy();
     if (current()) button.disabled = false;
   }
