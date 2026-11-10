@@ -86,3 +86,6 @@
 @media (max-width: 780px) {
   .detail-panel { scroll-margin-top: 1rem; }
 }
+
+.translation-status { color: var(--teal); margin: 0 0 .85rem; }
+.translation-status:empty { display: none; }

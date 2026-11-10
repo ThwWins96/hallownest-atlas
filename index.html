@@ -11,7 +11,7 @@
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
   <link rel="stylesheet" href="./bloom.css?v=9">
-  <link rel="stylesheet" href="./catalog.css?v=10">
+  <link rel="stylesheet" href="./catalog.css?v=11">
 </head>
 <body>
   <div class="bloom-drift" aria-hidden="true"></div>
@@ -87,8 +87,10 @@
     <div class="edit-languages">
       <label id="edit-locale-label" for="edit-locale">Language</label>
       <select class="form-input" id="edit-locale"><option value="en">English</option><option value="ru">Русский</option></select>
+      <button type="button" class="filter-chip" id="translate-draft"></button>
       <small id="edit-locale-note"></small>
     </div>
+    <p id="translation-status" class="translation-status" role="status"></p>
     <input type="hidden" id="edit-id"><div class="form-grid">
     <label class="field-label">НАЗВАНИЕ<input class="form-input" id="edit-name"></label>
     <label class="field-label">РАЗДЕЛ<select class="form-input" id="edit-kind"><option value="разумные">Разумные жуки</option><option value="дикие">Дикие существа</option><option value="equipment">Экипировка</option><option value="state">Состояния</option><option value="rule">Памятка правил</option></select></label>
@@ -125,7 +127,7 @@
   </dialog>
   <div id="reference-tip" role="tooltip" class="reference-tip hidden"></div>
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
-  <script src="./app.js?v=10" type="module"></script>
+  <script src="./app.js?v=11" type="module"></script>
 </body>
 </html>
 

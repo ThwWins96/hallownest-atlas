@@ -749,6 +749,7 @@ function wireCatalogTools() {
   $('#close-builder').onclick = () => $('#builder-dialog').close();
   $('#builder-search').oninput = renderBuilderList;
   $('#edit-kind').onchange = toggleRuleTopicField;
+  $('#translate-draft').onclick = translateDraft;
   $('#edit-locale').onchange = () => {
     editDrafts[editLanguage] = readEditorDraft();
     editLanguage = $('#edit-locale').value;
@@ -826,6 +827,19 @@ function traitCopies(item) {
   return /may be taken twice|можно взять дважды/iu.test(text) ? 2 : 1;
 }
 
+function renderBuilderSummary(selected) {
+  const all = selected.flatMap(({item,settings}) => Array.from({length:settings.count ?? 1}, (_, index) => ({
+    item,
+    settings: item.id === 'book-trait-029' && index ? {...settings,cost:2} : settings
+  })));
+  const {stats,points} = buildTotals(all,buildSize,buildAdjustments);
+  $('#builder-summary').innerHTML = '<p class="builder-points" role="status"><b>' + esc(t('Очки черт','Trait points'))
+    + ' · ' + esc(numberLabel(points)) + ' / 16</b>'
+    + (points > 16 ? '<span>' + esc(t('Лимит превышен на ', 'Over the limit by ') + numberLabel(points - 16)) + '</span>' : '')
+    + '</p><div class="detail-stats">' + Object.entries(stats).map(([key,value]) => '<div class="detail-stat"><small>'
+      + esc(statLabel(key)) + '</small><b>' + esc(numberLabel(value)) + '</b></div>').join('') + '</div>';
+}
+
 function renderBuilder() {
   $('#builder-title').textContent = t('Конструктор жука', 'Bug builder');
   $('#builder-search-label').textContent = t('Найти черту','Find a trait');
@@ -845,16 +859,7 @@ function renderBuilder() {
     $('#builder-search').focus();
   };
   const selected = builderTraits().filter(item => buildTraits.has(item.id)).map(item => ({item, settings:buildTraits.get(item.id)}));
-  const all = selected.flatMap(({item,settings}) => Array.from({length:settings.count ?? 1}, (_, index) => ({
-    item,
-    settings: item.id === 'book-trait-029' && index ? {...settings,cost:2} : settings
-  })));
-  const {stats,points} = buildTotals(all,buildSize,buildAdjustments);
-  $('#builder-summary').innerHTML = '<p class="builder-points" role="status"><b>' + esc(t('Очки черт','Trait points'))
-    + ' · ' + esc(numberLabel(points)) + ' / 16</b>'
-    + (points > 16 ? '<span>' + esc(t('Лимит превышен на ', 'Over the limit by ') + numberLabel(points - 16)) + '</span>' : '')
-    + '</p><div class="detail-stats">' + Object.entries(stats).map(([key,value]) => '<div class="detail-stat"><small>'
-      + esc(statLabel(key)) + '</small><b>' + esc(numberLabel(value)) + '</b></div>').join('') + '</div>';
+  renderBuilderSummary(selected);
   $('#builder-selected').innerHTML = selected.length ? '<h3>' + esc(t('Выбранные черты','Selected traits')) + '</h3>'
     + selected.map(({item,settings}) => {
       const effect = traitEffect(item, buildSize, settings);
@@ -894,12 +899,11 @@ function renderBuilder() {
       'Listed fixed bonuses and costs are calculated automatically. Check the trait text for conditional effects, restrictions, and subtraits.'))
     + '</p><div class="builder-adjustment-grid">' + Object.keys(templates[buildSize]).map(key => '<label>'
       + esc(statLabel(key)) + builderInput(key,buildAdjustments[key] ?? 0) + '</label>').join('') + '</div></details>';
-  $('#builder-adjustments').onchange = event => {
+  $('#builder-adjustments').oninput = event => {
     const key = event.target.dataset.buildSetting;
     if (!key) return;
     buildAdjustments[key] = Number(event.target.value);
-    renderBuilder();
-    $('#builder-adjustments [data-build-setting="' + key + '"]')?.focus({preventScroll:true});
+    renderBuilderSummary(selected);
   };
   renderBuilderList();
 }
@@ -981,6 +985,7 @@ function localizeEditorTools() {
   $('[data-format="**"]').textContent = t('Жирный','Bold');
   $('[data-format="=="]').textContent = t('Выделить','Highlight');
   $('[data-format="link"]').textContent = t('Ссылка на запись','Link to entry');
+  $('#translate-draft').textContent = t('Заполнить перевод','Fill in translation');
 }
 
 function formatSelection(format) {
@@ -993,6 +998,72 @@ function formatSelection(format) {
   field.setRangeText(left + text + right,start,end);
   field.focus();
   field.setSelectionRange(start + left.length,start + left.length + text.length);
+}
+
+async function translateDraft() {
+  const notice = $('#translation-status');
+  const button = $('#translate-draft');
+  const translatorAPI = globalThis.Translator;
+  if (!translatorAPI) {
+    notice.textContent = t('Автоперевод доступен в поддерживаемых настольных браузерах. Вторую версию можно заполнить вручную.',
+      'Automatic translation requires a supported desktop browser. You can enter the other version manually.');
+    return;
+  }
+  const drafts = editDrafts;
+  const sourceLanguage = editLanguage;
+  const targetLanguage = sourceLanguage === 'ru' ? 'en' : 'ru';
+  drafts[sourceLanguage] = readEditorDraft();
+  const source = drafts[sourceLanguage];
+  const target = drafts[targetLanguage];
+  if (!source.name.trim()) {
+    notice.textContent = t('Сначала заполни название исходной записи.','Enter the source title first.');
+    return;
+  }
+  const options = {sourceLanguage,targetLanguage};
+  const current = () => $('#edit-dialog').open && drafts === editDrafts;
+  let translator;
+  button.disabled = true;
+  notice.textContent = t('Готовим перевод…','Preparing translation…');
+  try {
+    if (await translatorAPI.availability(options) === 'unavailable') throw new Error('Unavailable');
+    translator = await translatorAPI.create(options);
+    if (!current()) return;
+    const translated = {};
+    for (const field of localizedFields) {
+      if (target[field].trim() || !source[field].trim()) continue;
+      const groupName = field === 'region' || field === 'group'
+        ? groupAliases.get($('#edit-kind').value + '|' + keyText(source[field])) : null;
+      translated[field] = groupName ? groupName[targetLanguage === 'en' ? 1 : 0]
+        : await translateWithFormatting(translator,source[field]);
+      if (!current()) return;
+    }
+    drafts[editLanguage] = readEditorDraft();
+    const other = drafts[targetLanguage];
+    for (const [field,value] of Object.entries(translated)) {
+      if (!other[field].trim()) other[field] = value;
+    }
+    editLanguage = targetLanguage;
+    loadEditorDraft();
+    notice.textContent = t('Проверь черновик перед сохранением. Характеристики можно заполнить вручную.',
+      'Review the draft before saving. Enter the localized stat values manually.');
+  } catch {
+    if (current()) notice.textContent = t('Автоперевод недоступен. Вторую версию можно заполнить вручную.',
+      'Automatic translation is unavailable. You can enter the other version manually.');
+  } finally {
+    translator?.destroy();
+    if (current()) button.disabled = false;
+  }
+}
+
+async function translateWithFormatting(translator, text) {
+  const parts = text.split(/(\[\[[^\]\n]+\]\]|\*\*|==|\r?\n)/);
+  for (let i = 0; i < parts.length; i += 2) {
+    const segment = parts[i];
+    if (!segment.trim()) continue;
+    const result = await translator.translate(segment.trim());
+    parts[i] = (segment.match(/^\s*/)?.[0] ?? '') + result + (segment.match(/\s*$/)?.[0] ?? '');
+  }
+  return parts.join('');
 }
 
 function editorDraft(record, locale) {
@@ -1039,6 +1110,8 @@ function openEditor(id) {
   $('#edit-rule-topic').value = topic || 'general';
   toggleRuleTopicField();
   loadEditorDraft();
+  $('#translation-status').textContent = '';
+  $('#translate-draft').disabled = false;
   $('#delete-button').classList.toggle('hidden', !record);
   $('#edit-dialog').showModal();
   $('#edit-name').focus();
