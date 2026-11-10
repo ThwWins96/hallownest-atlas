@@ -254,12 +254,21 @@ body::before {
 }
 .music-title {
   display: block;
+  width: 100%;
+  min-width: 0;
+  padding: .05rem 1rem .05rem 0;
   font-family: var(--serif);
-  font-size: 1.24rem;
-  line-height: 1;
-  white-space: nowrap;
+  font-size: 1.16rem;
+  line-height: 1.05;
   letter-spacing: -.014em;
+  color: var(--paper);
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 8'%3E%3Cpath fill='none' stroke='%23b9d9ed' stroke-width='1.25' d='m1 1 5 5 5-5'/%3E%3C/svg%3E") right .1rem center / 8px auto no-repeat;
+  border: 0;
+  border-radius: 2px;
+  appearance: none;
+  cursor: pointer;
 }
+.music-title option { color: var(--paper); background: var(--ink2); }
 .music-control button {
   grid-row: span 2;
   display: grid;
@@ -281,7 +290,7 @@ body::before {
 .music-control button svg { width: 19px; height: 19px; fill: currentColor; }
 .music-control .music-pause, .music-control button[aria-pressed="true"] .music-play { display: none; }
 .music-control button[aria-pressed="true"] .music-pause { display: block; }
-.music-control button:focus-visible, .music-control input:focus-visible { outline: 2px solid var(--teal2); outline-offset: 3px; }
+.music-control button:focus-visible, .music-control input:focus-visible, .music-title:focus-visible { outline: 2px solid var(--teal2); outline-offset: 3px; }
 .music-level {
   grid-column: 2;
   display: grid;
@@ -322,5 +331,5 @@ body::before {
   }
   .music-medallion { width: 36px; }
   .music-control button { width: 32px; height: 32px; }
-  .music-title { font-size: 1.1rem; }
+  .music-title { font-size: 1.02rem; }
 }

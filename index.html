@@ -10,7 +10,7 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="./style.css">
-  <link rel="stylesheet" href="./bloom.css?v=17">
+  <link rel="stylesheet" href="./bloom.css?v=18">
   <link rel="stylesheet" href="./catalog.css?v=11">
 </head>
 <body>
@@ -138,7 +138,7 @@
     </svg>
     <div class="music-copy">
       <span class="music-kicker">Atlas soundtrack</span>
-      <span class="music-title" lang="en">Lanterns Below</span>
+      <select class="music-title" id="music-track" aria-label="Choose a track"></select>
     </div>
     <button type="button" id="music-toggle" aria-pressed="false" aria-label="Play music">
       <svg class="music-play" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5.5v13l10-6.5z"/></svg>
@@ -152,7 +152,7 @@
     <span class="music-status" id="music-status" role="status"></span>
   </aside>
   <script src="./app.js?v=15" type="module"></script>
-  <script src="./music.js?v=17" type="module"></script>
+  <script src="./music.js?v=18" type="module"></script>
 </body>
 </html>
 

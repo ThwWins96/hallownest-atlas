@@ -1,6 +1,5 @@
-// "Lanterns Below", an original synthesized composition for Hallownest Atlas.
-const phraseLength = 6;
-const score = [
+// Original synthesized compositions for Hallownest Atlas.
+const lanterns = [
   { bass: 38, chord: [50, 57, 60, 64, 65], notes: [[0.5,69],[2.2,76],[4.4,72]] },
   { bass: 34, chord: [46, 53, 57, 60, 62], notes: [[1.1,74],[3.7,69]] },
   { bass: 43, chord: [50, 55, 58, 65, 69], notes: [[0.7,70],[2.6,74],[5.0,77]] },
@@ -10,9 +9,39 @@ const score = [
   { bass: 43, chord: [50, 55, 58, 60, 65], notes: [[1.3,77],[3.0,74],[5.1,70]] },
   { bass: 38, chord: [50, 57, 60, 64, 65], notes: [[0.8,69],[2.5,65],[4.1,64]] }
 ];
+
+const tracks = {
+  lanterns: { name: 'Lanterns Below', phraseLength: 6, score: lanterns },
+  glasswater: {
+    name: 'Glasswater',
+    phraseLength: 7.5,
+    score: [
+      { bass: 36, chord: [48,55,62,64,69], notes: [[0.7,79],[2.05,84],[4.55,81],[6.25,74]] },
+      { bass: 40, chord: [52,59,62,67,71], notes: [[1.3,76],[3.3,83],[5.9,79]] },
+      { bass: 41, chord: [48,53,60,64,67], notes: [[0.85,81],[2.65,84],[4.9,86],[6.35,79]] },
+      { bass: 38, chord: [50,57,60,64,65], notes: [[1.1,77],[3.75,76],[5.7,72]] },
+      { bass: 45, chord: [52,57,60,67,71], notes: [[0.5,83],[2.2,79],[4.6,76],[6.1,74]] },
+      { bass: 43, chord: [50,55,62,64,69], notes: [[1.55,81],[3.65,76],[5.85,74]] }
+    ]
+  },
+  threshold: {
+    name: 'Moss Threshold',
+    phraseLength: 5.5,
+    score: [
+      { bass: 40, chord: [47,52,55,59,66], notes: [[0.2,67],[1.45,66],[3.85,71]] },
+      { bass: 36, chord: [48,52,55,62,66], notes: [[0.9,64],[2.1,67],[4.2,74]] },
+      { bass: 38, chord: [45,50,54,57,62], notes: [[0.5,69],[2.75,66],[4.6,64]] },
+      { bass: 42, chord: [49,54,57,61,64], notes: [[0.3,61],[1.75,64],[3.7,69]] },
+      { bass: 35, chord: [47,50,54,57,64], notes: [[1.1,66],[2.8,62],[4.3,71]] },
+      { bass: 40, chord: [47,52,55,59,62], notes: [[0.65,67],[2.25,64],[4.05,66]] }
+    ]
+  }
+};
+
 const circle = 2 * Math.PI;
 
-export function renderMusic(sampleRate = 24000) {
+export function renderMusic(sampleRate = 24000, trackId = 'lanterns') {
+  const {phraseLength, score} = tracks[trackId];
   const frames = sampleRate * phraseLength * score.length;
   const dry = [new Float32Array(frames), new Float32Array(frames)];
   const addVoice = (pitch, start, duration, level, pan, plucked = false) => {
@@ -68,17 +97,22 @@ export function renderMusic(sampleRate = 24000) {
 function mountMusic() {
   const button = document.querySelector('#music-toggle');
   if (!button) return;
+  const picker = document.querySelector('#music-track');
   const volume = document.querySelector('#music-volume');
   const status = document.querySelector('#music-status');
   const settings = document.querySelector('.music-control');
-  const key = 'hallownest-music-volume';
+  const volumeKey = 'hallownest-music-volume';
+  const trackKey = 'hallownest-music-track';
   let context;
   let buffer;
   let active;
   let offset = 0;
 
-  const saved = localStorage.getItem(key);
+  const saved = localStorage.getItem(volumeKey);
   if (saved !== null && /^\d{1,3}$/.test(saved)) volume.value = Math.min(100, Number(saved));
+  picker.replaceChildren(...Object.entries(tracks).map(([id,track]) => new Option(track.name,id)));
+  const savedTrack = localStorage.getItem(trackKey);
+  if (Object.hasOwn(tracks,savedTrack)) picker.value = savedTrack;
 
   const translate = (ru,en) => document.querySelector('#language-switch').value === 'ru' ? ru : en;
   const update = () => {
@@ -92,27 +126,28 @@ function mountMusic() {
     settings.querySelector('.music-kicker').textContent = label;
     volume.setAttribute('aria-label', translate('Громкость музыки','Music volume'));
     volume.title = translate('Громкость музыки','Music volume');
+    picker.setAttribute('aria-label', translate('Выбрать композицию','Choose a track'));
   };
   const level = () => (Number(volume.value) / 100) ** 1.5;
 
-  button.onclick = async () => {
-    status.textContent = '';
-    if (active) {
-      const now = context.currentTime;
-      offset = (offset + now - active.startedAt) % buffer.duration;
-      active.gain.gain.setTargetAtTime(0, now, 0.021);
-      active.source.stop(now + 0.12);
-      active = undefined;
-      update();
-      return;
-    }
+  const pause = () => {
+    const now = context.currentTime;
+    offset = (offset + now - active.startedAt) % buffer.duration;
+    active.gain.gain.setTargetAtTime(0, now, 0.021);
+    active.source.stop(now + 0.12);
+    active = undefined;
+    update();
+  };
 
+  const play = async () => {
+    status.textContent = '';
     button.disabled = true;
+    picker.disabled = true;
     try {
       context ??= new AudioContext();
       await context.resume();
       if (!buffer) {
-        const channels = renderMusic();
+        const channels = renderMusic(24000, picker.value);
         buffer = context.createBuffer(channels.length, channels[0].length, 24000);
         channels.forEach((samples, channel) => buffer.copyToChannel(samples, channel));
       }
@@ -131,12 +166,23 @@ function mountMusic() {
       status.textContent = translate('Не удалось запустить музыку.','Music could not start.');
     } finally {
       button.disabled = false;
+      picker.disabled = false;
       update();
     }
   };
 
+  button.onclick = () => active ? pause() : play();
+  picker.onchange = () => {
+    const wasPlaying = Boolean(active);
+    if (wasPlaying) pause();
+    buffer = undefined;
+    offset = 0;
+    localStorage.setItem(trackKey, picker.value);
+    if (wasPlaying) void play();
+    else status.textContent = '';
+  };
   volume.oninput = () => {
-    localStorage.setItem(key, volume.value);
+    localStorage.setItem(volumeKey, volume.value);
     active?.gain.gain.setTargetAtTime(level(), context.currentTime, 0.035);
   };
   document.querySelector('#language-switch').addEventListener('change', update);
