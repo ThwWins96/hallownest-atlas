@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <defs>
+    <radialGradient id="night" cx=".49" cy=".64" r=".69">
+      <stop stop-color="#285077"/>
+      <stop offset="1" stop-color="#0b1429"/>
+    </radialGradient>
+    <linearGradient id="shell" x2="0" y2="1" gradientUnits="objectBoundingBox">
+      <stop stop-color="#f5fdff"/>
+      <stop offset="1" stop-color="#a7d9ec"/>
+    </linearGradient>
+  </defs>
+  <rect x="2" y="2" width="60" height="60" rx="15" fill="url(#night)" stroke="#6088ad" stroke-width="2"/>
+  <path fill="url(#shell)" d="M17 30c-7-5-8-14-3-20 1 7 5 12 10 14a29 29 0 0 1 16 0c5-2 9-7 10-14 5 6 4 15-3 20l1 10c0 8-7 13-16 13s-16-5-16-13z"/>
+  <path fill="#101c32" d="M27.5 37.6c0 3.3-1.7 5.5-4 5.5s-4-2.2-4-5.5 1.7-5.5 4-5.5 4 2.2 4 5.5Zm17 0c0 3.3-1.7 5.5-4 5.5s-4-2.2-4-5.5 1.7-5.5 4-5.5 4 2.2 4 5.5Z"/>
+</svg>
