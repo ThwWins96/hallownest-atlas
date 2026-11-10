@@ -2,7 +2,7 @@
 export const facetFields = {
   type: ['Тип', 'Type', 'weapon type', 'тип оружия'],
   range: ['Дальность', 'Range', 'reach', 'дистанция'],
-  duration: ['Длительность', 'Duration'],
+  duration: ['Длительность', 'Duration', 'длитеность'],
   difficulty: ['Сложность', 'Difficulty'],
   damage: ['Урон', 'Damage'],
   grip: ['Хватка', 'Grip', 'hands'],
@@ -33,7 +33,7 @@ const values = {
   range: [['Касание', 'Touch'], ['Близко', 'Close'], ['Далеко', 'Far'], ['На себя', 'Self'],
     ['Ближний', 'Melee'], ['Дальний', 'Range', 'Ranged'], ['Досяг.', 'Reach']],
   duration: [['Краткая', 'Brief', 'краткость'], ['Особая', 'Special'], ['Сцена', 'Scene'],
-    ['Концентрация', 'Concentration'], ['Жизнь', 'Lifetime'], ['Вечность', 'Eternal'], ['1 Отдых', '1 Rest']],
+    ['Концентрация', 'Concentration'], ['Жизнь', 'Lifetime'], ['Вечность', 'Eternal'], ['1 Отдых', '1 Rest'], ['Мгновенная', 'Instantaneous']],
   grip: [['1Р', '1H'], ['2Р', '2H'], ['2Р+', '2H+']],
   cost: [['Концентрация', 'Focus Action']],
   heavy: [['Лёгкое', 'Light']],
@@ -69,17 +69,94 @@ export function englishStatValue(key, value) {
 
 const tracked = {
   equipment: ['type', 'range', 'damage', 'grip', 'price', 'heavy', 'quality', 'geo'],
-  spell: ['range', 'duration', 'difficulty', 'souls', 'cost'],
+  spell: ['range', 'difficulty', 'duration', 'souls', 'cost'],
   art: ['type', 'cost', 'stamina', 'souls', 'prerequisite'],
   trait: ['hunger', 'dread', 'charm', 'prerequisite']
 };
 const escapeRE = value => value.replace(/[.*+?^$\x7b\x7d()|[\]\\]/g, '\\$&');
 
-function spellHeader(key, text) {
-  const label = facetFields[key].slice(0, 2).map(escapeRE).join('|');
-  const options = key === 'difficulty' ? '\\d+' : values[key].flat().sort((a,b) => b.length - a.length).map(escapeRE).join('|') + '|1\\s+отдых\\w*';
-  const pattern = new RegExp('(?:^|\\s)(?:' + label + ')(?:\\s+[АБAB])?\\s*:\\s*(' + options + ')(?![\\p{L}\\p{N}])', 'giu');
-  return [...text.slice(0, 165).matchAll(pattern)].map(match => match[1]);
+export const spellStatOrder = ['range','difficulty','duration'];
+
+const spellTerms = key => values[key].flat().sort((a,b) => b.length - a.length).map(escapeRE).join('|');
+const rangeTerm = '(?:' + spellTerms('range') + '|\\d+[ \\t]*(?:клет(?:ка|ки|ок)|squares?))'
+  + '(?:[ \\t]*\\((?:Target|Place Copy|Цель|Место копии|\\d+)\\))?';
+const spellValues = {
+  range: rangeTerm + '(?:[ \\t]*[,/][ \\t]*' + rangeTerm + ')*',
+  difficulty: '\\d+',
+  duration: spellTerms('duration') + '|\\d+[ \\t]*(?:раунд(?:а|ов)?|минут[аыу]?|отдых(?:а|ов)?|rounds?|minutes?|rests?)'
+};
+const spellHeaderPatterns = Object.fromEntries(spellStatOrder.map(key => {
+  const labels = facetFields[key].slice(0,2).map(escapeRE).join('|');
+  const letter = key === 'range' ? '(?:[ \\t]+([АБAB]))?' : '()';
+  const separator = key === 'difficulty' ? '(?:[ \\t]*:[ \\t]*|[ \\t]+)' : '[ \\t]*:[ \\t]*';
+  return [key,new RegExp('^(?:' + labels + ')' + letter + separator + '(' + spellValues[key]
+    + ')(?![\\p{L}\\p{N}])','iu')];
+}));
+const ritualPrefix = /^(?:Стоимость|Cost)[\s\S]*?(?:Время каста|Casting Time)[ \t]*:[^\n]*\n(?=[ \t]*(?:Длительность|Duration)[ \t]*:)/iu;
+
+export function splitSpellHeader(text) {
+  const prefix = text.match(ritualPrefix)?.[0] ?? '';
+  let rest = text.slice(prefix.length).trimStart();
+  const stats = {};
+  while (rest) {
+    const key = spellStatOrder.find(field => spellHeaderPatterns[field].test(rest));
+    if (!key) break;
+    const [match,letter,value] = spellHeaderPatterns[key].exec(rest);
+    const part = letter ? letter.toUpperCase() + ': ' + value : value;
+    stats[key] = stats[key] ? stats[key] + ' / ' + part : part;
+    rest = rest.slice(match.length).replace(/^[\s.;•]+/u,'');
+  }
+  return Object.keys(stats).length
+    ? {stats,text:[prefix.trimEnd(),rest].filter(Boolean).join('\n\n')}
+    : {stats,text};
+}
+
+export function normalizeSpellFields(record) {
+  const fields = {...record};
+  const stats = Object.fromEntries(Object.entries(fields.stats ?? {}).map(([key,value]) => [statKey(key),value]));
+  for (const field of ['text','description','traits']) {
+    const value = field === 'traits' ? stats.traits : fields[field];
+    if (typeof value !== 'string' || !value) continue;
+    const parsed = splitSpellHeader(value);
+    for (const key of spellStatOrder) {
+      if (!String(stats[key] ?? '').trim() && parsed.stats[key]) stats[key] = parsed.stats[key];
+    }
+    if (field === 'traits') {
+      if (parsed.text) stats.traits = parsed.text;
+      else delete stats.traits;
+    } else {
+      fields[field] = parsed.text;
+    }
+  }
+  return {...fields,stats};
+}
+
+export function spellStatValue(key, value, locale) {
+  return String(value ?? '').split(/\s*([/,;])\s*/).map((part,index) => {
+    if (index % 2) return part === ',' ? ', ' : ' ' + part + ' ';
+    let stat = part.trim();
+    const letter = stat.match(/^([АБAB]):\s*/iu);
+    stat = stat.slice(letter?.[0].length ?? 0);
+    const qualifier = stat.match(/\s*\((Target|Place Copy|Цель|Место копии)\)$/iu);
+    stat = stat.slice(0, stat.length - (qualifier?.[0].length ?? 0));
+    const quantity = stat.match(/^(\d+)\s+(ктетки|клет(?:ка|ки|ок)|squares?|минут[аыу]?|minutes?|раунд(?:а|ов)?|rounds?)$/iu);
+    let result = displayValue(key,stat,locale);
+    if (quantity) {
+      const count = Number(quantity[1]);
+      const forms = /^(?:к[лт]|square)/iu.test(quantity[2]) ? ['клетка','клетки','клеток','square']
+        : /^(?:минут|minute)/iu.test(quantity[2]) ? ['минута','минуты','минут','minute']
+        : ['раунд','раунда','раундов','round'];
+      const suffix = count % 100 >= 11 && count % 100 <= 14 ? 2 : count % 10 === 1 ? 0 : count % 10 >= 2 && count % 10 <= 4 ? 1 : 2;
+      result = count + ' ' + (locale === 'en' ? forms[3] + (count === 1 ? '' : 's') : forms[suffix]);
+    }
+    if (qualifier) {
+      const target = /^(Target|Цель)$/iu.test(qualifier[1]);
+      result += ' (' + (locale === 'en' ? target ? 'Target' : 'Place Copy' : target ? 'Цель' : 'Место копии') + ')';
+    }
+    if (!letter) return result;
+    const first = /^[AА]$/iu.test(letter[1]);
+    return (locale === 'en' ? first ? 'A' : 'B' : first ? 'А' : 'Б') + ': ' + result;
+  }).join('');
 }
 
 const traitNames = {
@@ -98,7 +175,6 @@ export function traitHeader(text) {
 
 function textFacets(item) {
   const text = String(item.text ?? '');
-  if (item.kind === 'spell') return Object.fromEntries(['range', 'duration', 'difficulty'].map(key => [key, spellHeader(key, text)]));
   if (item.kind === 'trait') return traitHeader(text).modifiers;
   if (item.kind !== 'art') return {};
   const prefix = text.slice(0, 120);
@@ -122,7 +198,8 @@ export function getFacets(item, locale) {
     if (['traits','kind','topic','region','group','__proto__','constructor','prototype'].includes(key)
       || value == null || value === '' || String(value).length > 96) continue;
     const parts = ['type','range','duration','prerequisite'].includes(key) ? String(value).split(/\s*[/,;•]\s*/) : [String(value)];
-    found.set(key,parts.filter(Boolean));
+    found.set(key,parts.map(part => item.kind === 'spell' && key === 'range'
+      ? part.replace(/^[АБAB]:\s*/iu,'').replace(/\s*\((?:Target|Place Copy|Цель|Место копии)\)$/iu,'') : part).filter(Boolean));
     available.add(key);
   }
   return Object.fromEntries([...available].filter(key => found.get(key)?.length).map(key => {

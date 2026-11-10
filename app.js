@@ -1,6 +1,6 @@
 import {readArchive, writeArchive} from './archive-api.js';
 import {language, setLanguage, t, cleanText} from './locale.js?v=10';
-import {facetFields, getFacets, keyText, statKey, englishStatValue, topicOf, templates, traitEffect, buildTotals, makeReferenceIndex} from './catalog.js?v=12';
+import {facetFields, getFacets, keyText, statKey, englishStatValue, spellStatOrder, spellStatValue, normalizeSpellFields, topicOf, templates, traitEffect, buildTotals, makeReferenceIndex} from './catalog.js?v=14';
 
 const KIND_LABEL = {
   разумные:'Разумный жук', дикие:'Дикое существо', equipment:'Экипировка', state:'Состояние',
@@ -359,7 +359,14 @@ function localizeRecord(record, locale = language) {
   }
   result.topic = topicOf(record) || topicOf(result);
   if (result.topic) result.kind = 'rule';
-  return result;
+  if (result.kind !== 'spell') return result;
+  const spell = normalizeSpellFields(result);
+  const alternate = normalizeSpellFields(effectiveLocale === 'en' ? record : personal ?? {});
+  for (const key of spellStatOrder) {
+    const value = spell.stats[key] || alternate.stats[key];
+    if (value) spell.stats[key] = spellStatValue(key,value,locale);
+  }
+  return spell;
 }
 
 function rebuildCatalogIndex() {
@@ -378,7 +385,9 @@ function rebuildCatalogIndex() {
 }
 
 function catalogGroup(item, field) {
-  const value = item[field];
+  let value = item[field];
+  if (item.kind === 'spell' && field === 'region' && item.group
+    && (!value || groupAliases.has('spell|' + keyText(item.group)))) value = item.group;
   const match = groupAliases.get(item.kind + '|' + keyText(value));
   if (match) return match[language === 'en' ? 1 : 0];
   if (item.kind === 'equipment' && (/^(оружие|weapons)$/i.test(value)
@@ -424,9 +433,21 @@ function filteredRecords() {
   const search = $('#search').value;
   if (currentView === 'search') return searchAtlas(search);
   const query = normalizeQuery(search);
-  return typeRecords().filter(item => Object.entries(selectedFacets).every(([key, choices]) =>
+  const records = typeRecords().filter(item => Object.entries(selectedFacets).every(([key, choices]) =>
     !choices.length || choices.some(choice => catalogFacets.get(item.id)?.[key]?.includes(choice)))
     && (!query || normalizeQuery([item.name, item.description, item.region, item.group, item.text, ...Object.values(item.stats)].join(' ')).includes(query)));
+  return currentView === 'magic' ? sortMagicRecords(records) : records;
+}
+
+function sortMagicRecords(records) {
+  const bookOrder = defaults.filter(record => record.kind === 'spell' && !topicOf(record));
+  const ids = new Map(bookOrder.map((record,index) => [record.id,index]));
+  const schools = new Map([...new Set(bookOrder.map(record => catalogGroup(record,'region')))].map((school,index) => [school,index]));
+  const group = item => catalogGroup(item,'region');
+  return records.sort((a,b) => (schools.get(group(a)) ?? schools.size) - (schools.get(group(b)) ?? schools.size)
+    || group(a).localeCompare(group(b),language)
+    || (ids.get(a.id) ?? ids.size) - (ids.get(b.id) ?? ids.size)
+    || a.name.localeCompare(b.name,language));
 }
 
 function render() {
@@ -556,9 +577,10 @@ function statLabel(key) {
 
 function statPairs(item) {
   const stats = item.stats ?? {};
-  return [...new Set([...STAT_ORDER, ...Object.keys(stats)])]
-    .filter(key => stats[key] !== undefined && stats[key] !== '' && key !== 'traits')
-    .map(key => [statLabel(key), stats[key]]);
+  const required = item.kind === 'spell' ? spellStatOrder : [];
+  return [...new Set([...required, ...STAT_ORDER, ...Object.keys(stats)])]
+    .filter(key => required.includes(key) || (stats[key] !== undefined && stats[key] !== '' && key !== 'traits'))
+    .map(key => [statLabel(key), stats[key] || t('Не указано','Not specified')]);
 }
 function renderList(){const list=filteredRecords();
   if (currentView === 'search') {
@@ -1087,14 +1109,17 @@ async function translateWithFormatting(translator, text) {
   return parts.join('');
 }
 
-function editorDraft(record, locale) {
+function editorDraft(record, locale, kind) {
   const initial = record && originals.get(record.id);
   const hasRussian = record && record.baseLocale !== 'en';
   const hasEnglish = record && (record.en || english[record.id] || initial?.en || record.baseLocale === 'en');
   const item = (locale === 'ru' ? hasRussian : hasEnglish) && localizeRecord(record,locale);
   const draft = Object.fromEntries(localizedFields.map(field => [field,item?.[field] ?? '']));
   const shared = Object.entries(record?.stats ?? {}).filter(([key]) => numericStats.has(key));
-  draft.stats = (item ? Object.entries(item.stats) : shared).map(([key,value]) => {
+  const stats = item?.stats ?? Object.fromEntries(shared);
+  const ordered = kind === 'spell' ? [...new Set([...spellStatOrder,...Object.keys(stats)])] : Object.keys(stats);
+  draft.stats = ordered.map(key => {
+    const value = stats[key] ?? '';
     const field = statKey(key);
     const labels = Object.hasOwn(facetFields,field) && facetFields[field];
     const label = labels ? labels[locale === 'en' ? 1 : 0] : locale === language ? statLabel(key) : key;
@@ -1121,13 +1146,14 @@ function openEditor(id) {
   if (!gmUnlocked) return;
   editLanguage = language;
   const record = id && db.find(entry => entry.id === id);
-  initialDrafts = {en:editorDraft(record,'en'), ru:editorDraft(record,'ru')};
+  const topic = record ? topicOf(record) : selectedFacets.topic?.[0];
+  const kind = (record && topic ? 'rule' : record?.kind) ?? (activeBench || VIEW_META[currentView].types?.[0] || 'разумные');
+  initialDrafts = {en:editorDraft(record,'en',kind), ru:editorDraft(record,'ru',kind)};
   editDrafts = structuredClone(initialDrafts);
   editorRevision = archiveRevision;
   $('#edit-title').textContent = t(record ? 'Редактировать запись' : 'Новая запись');
   $('#edit-id').value = record?.id ?? '';
-  const topic = record ? topicOf(record) : selectedFacets.topic?.[0];
-  $('#edit-kind').value = (record && topic ? 'rule' : record?.kind) ?? (activeBench || VIEW_META[currentView].types?.[0] || 'разумные');
+  $('#edit-kind').value = kind;
   $('#edit-rule-topic').value = topic || 'general';
   toggleRuleTopicField();
   loadEditorDraft();
@@ -1151,20 +1177,21 @@ function parseStats(value) {
   return stats;
 }
 
-function cleanDraft(draft) {
+function cleanDraft(draft, kind) {
   const fields = Object.fromEntries(localizedFields.map(field => [field,cleanText(draft[field],field === 'text' || field === 'description')]));
-  return {...fields,stats:parseStats(draft.stats)};
+  const item = {...fields,stats:parseStats(draft.stats)};
+  return kind === 'spell' ? normalizeSpellFields(item) : item;
 }
 
 async function saveEditor(event) {
   event.preventDefault();
   if (!gmUnlocked || writing) return;
   editDrafts[editLanguage] = readEditorDraft();
-  const ru = cleanDraft(editDrafts.ru);
-  const en = cleanDraft(editDrafts.en);
+  const kind = $('#edit-kind').value;
+  const ru = cleanDraft(editDrafts.ru,kind);
+  const en = cleanDraft(editDrafts.en,kind);
   if (!ru.name && !en.name) return toast(t('Укажи название хотя бы на одном языке.', 'Enter a name in at least one language.'));
   const id = $('#edit-id').value || crypto.randomUUID();
-  const kind = $('#edit-kind').value;
   const old = db.find(record => record.id === id);
   const changed = locale => JSON.stringify(editDrafts[locale]) !== JSON.stringify(initialDrafts[locale]);
   const changedRu = changed('ru');
